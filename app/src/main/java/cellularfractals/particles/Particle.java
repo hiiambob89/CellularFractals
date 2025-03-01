@@ -19,7 +19,7 @@ public abstract class Particle {
   private List<Force> forces = new CopyOnWriteArrayList<>();
   private double mass = 1.0; // Default mass
   public CosmeticSettings cosmeticSettings;
-  private double radius = .01; // Default radius
+  private double radius = .5; // Default radius
   private double restitution = .8; // Default elasticity (1.0 = perfect elastic, 0.0 = perfect inelastic)
   private double friction = 0.1; // Default friction coefficient for collisions
   private volatile boolean effectsApplied = false;
@@ -189,5 +189,9 @@ public abstract class Particle {
       this.color = color;
       this.trailColor = trailColor;
     }
+  }
+
+  public void delete() {
+    this.world.removeParticle(this);
   }
 }

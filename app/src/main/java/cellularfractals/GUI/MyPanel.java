@@ -34,14 +34,14 @@ public class MyPanel extends JPanel {
     private Map<String, Boolean> particleTypeVisibility = new HashMap<>();
     private JPanel visibilityPanel;
     private boolean visibilityPanelExpanded = true;
-    
+
     // Mouse gravity effect fields
     private MouseGravityEffect mouseGravityEffect;
     private boolean mouseGravityEnabled = false;
     private boolean mouseGravityAttractive = true;
     private float mouseGravityStrength = 1.0f;
     private float mouseGravityRange = 100f;
-    
+
     // Ground gravity effect
     private GroundGravityEffect groundGravityEffect;
     private boolean groundGravityEnabled = false;
@@ -58,7 +58,7 @@ public class MyPanel extends JPanel {
         mouseGravityEffect = new MouseGravityEffect(mouseGravityRange, mouseGravityStrength);
         mouseGravityEffect.setEnabled(false);
         world.effectModifierIndex.addGlobalEffect(mouseGravityEffect);
-        
+
         // Create ground gravity effect
         groundGravityEffect = new GroundGravityEffect(groundGravityStrength);
         groundGravityEffect.setEnabled(false);
@@ -103,12 +103,12 @@ public class MyPanel extends JPanel {
         vectorArrowsToggle.addActionListener(e -> { showVectorArrows = vectorArrowsToggle.isSelected(); canvas.repaint(); });
         controlPanel.add(vectorArrowsToggle, gbc);
         gbc.gridy++;
-        
+
         // Mouse gravity options panel
         JPanel mouseGravityPanel = new JPanel();
         mouseGravityPanel.setBorder(BorderFactory.createTitledBorder("Mouse Gravity"));
         mouseGravityPanel.setLayout(new BoxLayout(mouseGravityPanel, BoxLayout.Y_AXIS));
-        
+
         // Mouse gravity toggle
         JCheckBox mouseGravityToggle = new JCheckBox("Enable Mouse Gravity", mouseGravityEnabled);
         mouseGravityToggle.addActionListener(e -> {
@@ -116,13 +116,13 @@ public class MyPanel extends JPanel {
             mouseGravityEffect.setEnabled(mouseGravityEnabled);
         });
         mouseGravityPanel.add(mouseGravityToggle);
-        
+
         // Mouse gravity type radio buttons
         JPanel mouseTypePanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         ButtonGroup mouseTypeGroup = new ButtonGroup();
         JRadioButton attractiveButton = new JRadioButton("Attractive", mouseGravityAttractive);
         JRadioButton repulsiveButton = new JRadioButton("Repulsive", !mouseGravityAttractive);
-        
+
         attractiveButton.addActionListener(e -> {
             mouseGravityAttractive = true;
             mouseGravityEffect.setStrength(Math.abs(mouseGravityStrength));
@@ -131,13 +131,13 @@ public class MyPanel extends JPanel {
             mouseGravityAttractive = false;
             mouseGravityEffect.setStrength(-Math.abs(mouseGravityStrength));
         });
-        
+
         mouseTypeGroup.add(attractiveButton);
         mouseTypeGroup.add(repulsiveButton);
         mouseTypePanel.add(attractiveButton);
         mouseTypePanel.add(repulsiveButton);
         mouseGravityPanel.add(mouseTypePanel);
-        
+
         // Mouse gravity strength slider
         JPanel mouseStrengthPanel = new JPanel(new BorderLayout(5, 0));
         mouseStrengthPanel.add(new JLabel("Strength:"), BorderLayout.WEST);
@@ -151,7 +151,7 @@ public class MyPanel extends JPanel {
         mouseStrengthPanel.add(mouseStrengthSlider, BorderLayout.CENTER);
         mouseStrengthPanel.add(mouseStrengthValueLabel, BorderLayout.EAST);
         mouseGravityPanel.add(mouseStrengthPanel);
-        
+
         // Mouse gravity range slider
         JPanel mouseRangePanel = new JPanel(new BorderLayout(5, 0));
         mouseRangePanel.add(new JLabel("Range:"), BorderLayout.WEST);
@@ -165,15 +165,15 @@ public class MyPanel extends JPanel {
         mouseRangePanel.add(mouseRangeSlider, BorderLayout.CENTER);
         mouseRangePanel.add(mouseRangeValueLabel, BorderLayout.EAST);
         mouseGravityPanel.add(mouseRangePanel);
-        
+
         controlPanel.add(mouseGravityPanel, gbc);
         gbc.gridy++;
-        
+
         // Ground gravity panel
         JPanel groundGravityPanel = new JPanel();
         groundGravityPanel.setBorder(BorderFactory.createTitledBorder("Ground Gravity"));
         groundGravityPanel.setLayout(new BoxLayout(groundGravityPanel, BoxLayout.Y_AXIS));
-        
+
         // Ground gravity toggle
         JCheckBox groundGravityToggle = new JCheckBox("Enable Ground Gravity", groundGravityEnabled);
         groundGravityToggle.addActionListener(e -> {
@@ -181,7 +181,7 @@ public class MyPanel extends JPanel {
             groundGravityEffect.setEnabled(groundGravityEnabled);
         });
         groundGravityPanel.add(groundGravityToggle);
-        
+
         // Ground gravity strength slider
         JPanel groundStrengthPanel = new JPanel(new BorderLayout(5, 0));
         groundStrengthPanel.add(new JLabel("Strength:"), BorderLayout.WEST);
@@ -195,7 +195,7 @@ public class MyPanel extends JPanel {
         groundStrengthPanel.add(groundStrengthSlider, BorderLayout.CENTER);
         groundStrengthPanel.add(groundStrengthValueLabel, BorderLayout.EAST);
         groundGravityPanel.add(groundStrengthPanel);
-        
+
         controlPanel.add(groundGravityPanel, gbc);
         gbc.gridy++;
 
@@ -246,6 +246,7 @@ public class MyPanel extends JPanel {
         registerParticleType("Anti-Gravity Particle", (x, y) -> createGravityParticle(x, y, false));
         registerParticleType("Demo Particle", (x, y) -> new DemoParticle(world, x, y, 0, 0));
         registerParticleType("Ghost Particle", (x, y) -> createGhostParticle(x, y));
+        registerParticleType("Exploding Particle", (x, y) -> createExplodingParticle(x, y));
 
         for (String type : particleParameters.keySet()) {
             JButton btn = new JButton(type);
@@ -310,13 +311,18 @@ public class MyPanel extends JPanel {
      */
     private void updateMousePosition(MouseEvent e) {
         if (!mouseGravityEnabled) return;
-        
+
+        // Calculate size and offsets for square aspect ratio
+        int size = Math.min(canvas.getWidth(), canvas.getHeight());
+        int xOffset = (canvas.getWidth() - size) / 2;
+        int yOffset = (canvas.getHeight() - size) / 2;
+
         // Convert screen coordinates to world coordinates
         double worldX = Math.max(0, Math.min(world.getWidth(),
-            (e.getX() * world.getWidth()) / canvas.getWidth()));
+            ((e.getX() - xOffset) * world.getWidth()) / size));
         double worldY = Math.max(0, Math.min(world.getHeight(),
-            (e.getY() * world.getHeight()) / canvas.getHeight()));
-            
+            ((e.getY() - yOffset) * world.getHeight()) / size));
+
         mouseGravityEffect.setPosition(worldX, worldY);
     }
 
@@ -327,6 +333,7 @@ public class MyPanel extends JPanel {
         particleTypeVisibility.put("Anti-Gravity Particle", true);
         particleTypeVisibility.put("Demo Particle", true);
         particleTypeVisibility.put("Ghost Particle", true);
+        particleTypeVisibility.put("Exploding Particle", true);
     }
 
     private void updateVisibilityPanel() {
@@ -374,6 +381,8 @@ public class MyPanel extends JPanel {
             double strengthMin = particleType.contains("Anti") ? -1.0 : 0.001;
             double strengthMax = particleType.contains("Anti") ? -0.001 : 1;
             addSlider(parameterPanel, "Strength", params, "strength", strengthMin, strengthMax);
+        } else if (particleType.equals("Exploding Particle")) {
+            addSlider(parameterPanel, "Explosion Radius", params, "explosionRadius", 1.0, 50.0);
         }
         parameterPanel.revalidate();
         parameterPanel.repaint();
@@ -424,6 +433,21 @@ public class MyPanel extends JPanel {
         return p;
     }
 
+    private ExplodingParticle createExplodingParticle(double x, double y) {
+        Map<String, Double> params = particleParameters.get("Exploding Particle");
+        ExplodingParticle p = new ExplodingParticle(
+            world,
+            x,
+            y,
+            params.get("velocityX"),
+            params.get("velocityY"),
+            params.get("explosionRadius").intValue()
+        );
+        p.setMass(params.get("mass"));
+        p.setRadius(params.get("radius"));
+        return p;
+    }
+
     // Parameter map initialization
     private void initializeParameterMap() {
         particleParameters = new HashMap<>();
@@ -453,26 +477,55 @@ public class MyPanel extends JPanel {
         demoParams.put("velocityX", 0.0); demoParams.put("velocityY", 0.0);
         demoParams.put("mass", 1.0); demoParams.put("radius", 0.5);
         particleParameters.put("Demo Particle", demoParams);
+
+        // Add exploding particle parameters
+        Map<String, Double> explodingParams = new HashMap<>();
+        explodingParams.put("velocityX", 0.0);
+        explodingParams.put("velocityY", 0.0);
+        explodingParams.put("mass", 1.0);
+        explodingParams.put("radius", 0.5);
+        explodingParams.put("explosionRadius", 10.0);
+        particleParameters.put("Exploding Particle", explodingParams);
     }
 
     // Custom canvas with proper visibility filtering
     private class CustomCanvas extends JPanel {
-        public CustomCanvas() { setBackground(Color.BLACK); }
+        public CustomCanvas() {
+            setBackground(Color.BLACK);
+        }
+
+        @Override
+        public Dimension getPreferredSize() {
+            // Get available height
+            Container parent = getParent();
+            int availableHeight = parent != null ? parent.getHeight() : 400;
+            // Make it square based on height
+            return new Dimension(availableHeight, availableHeight);
+        }
+
         @Override
         protected void paintComponent(Graphics g) {
             super.paintComponent(g);
             Graphics2D g2d = (Graphics2D) g;
             g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-            int width = getWidth(), height = getHeight();
+
+            // Ensure square rendering area
+            int size = Math.min(getWidth(), getHeight());
+            int xOffset = (getWidth() - size) / 2;
+            int yOffset = (getHeight() - size) / 2;
+
             // Draw grid lines
             g2d.setColor(new Color(30,30,30));
             for (double x = 0; x < world.getWidth(); x += 10.0) {
-                g2d.drawLine((int)(x*width/world.getWidth()), 0, (int)(x*width/world.getWidth()), height);
+                int xPos = (int)(x*size/world.getWidth()) + xOffset;
+                g2d.drawLine(xPos, yOffset, xPos, size + yOffset);
             }
             for (double y = 0; y < world.getHeight(); y += 10.0) {
-                g2d.drawLine(0, (int)(y*height/world.getHeight()), width, (int)(y*height/world.getHeight()));
+                int yPos = (int)(y*size/world.getHeight()) + yOffset;
+                g2d.drawLine(xOffset, yPos, size + xOffset, yPos);
             }
-            // Draw particles using effective type-checking
+
+            // Draw particles with adjusted coordinates
             for (Particle particle : world.getParticles()) {
                 String typeForVisibility;
                 if (particle instanceof GravityParticle) {
@@ -483,9 +536,9 @@ public class MyPanel extends JPanel {
                 Boolean vis = particleTypeVisibility.get(typeForVisibility);
                 if (vis != null && !vis) continue;
 
-                int screenX = (int)(particle.getX()*width/world.getWidth());
-                int screenY = (int)(particle.getY()*height/world.getHeight());
-                int screenRadius = (int)(particle.getRadius()*width/world.getWidth());
+                int screenX = (int)(particle.getX()*size/world.getWidth()) + xOffset;
+                int screenY = (int)(particle.getY()*size/world.getHeight()) + yOffset;
+                int screenRadius = (int)(particle.getRadius()*size/world.getWidth());
                 g2d.setColor(particle.cosmeticSettings != null ? particle.cosmeticSettings.color : Color.WHITE);
                 g2d.fillOval(screenX - screenRadius, screenY - screenRadius, screenRadius * 2, screenRadius * 2);
                 if (showVectorArrows) {
@@ -494,28 +547,28 @@ public class MyPanel extends JPanel {
                     g2d.drawLine(screenX, screenY, screenX+velX, screenY+velY);
                 }
             }
-            
+
             // Draw mouse gravity indicator when enabled
             if (mouseGravityEnabled) {
                 Point mousePoint = getMousePosition();
                 if (mousePoint != null) {
-                    int indicatorSize = (int)(mouseGravityRange * width / world.getWidth());
-                    g2d.setColor(mouseGravityAttractive ? 
+                    int indicatorSize = (int)(mouseGravityRange * size / world.getWidth());
+                    g2d.setColor(mouseGravityAttractive ?
                         new Color(175, 0, 255, 50) : new Color(255, 0, 175, 50));
                     g2d.fillOval(
-                        mousePoint.x - indicatorSize/2, 
-                        mousePoint.y - indicatorSize/2, 
-                        indicatorSize, 
+                        mousePoint.x - indicatorSize/2,
+                        mousePoint.y - indicatorSize/2,
+                        indicatorSize,
                         indicatorSize
                     );
-                    
+
                     // Draw a small center point
-                    g2d.setColor(mouseGravityAttractive ? 
+                    g2d.setColor(mouseGravityAttractive ?
                         new Color(175, 0, 255) : new Color(255, 0, 175));
                     g2d.fillOval(
-                        mousePoint.x - 5, 
-                        mousePoint.y - 5, 
-                        10, 
+                        mousePoint.x - 5,
+                        mousePoint.y - 5,
+                        10,
                         10
                     );
                 }
@@ -541,20 +594,21 @@ public class MyPanel extends JPanel {
         if (selectedFactory != null && canvas.getBounds().contains(e.getPoint())) {
             Point canvasPoint = SwingUtilities.convertPoint(e.getComponent(), e.getPoint(), canvas);
 
+            // Calculate size and offsets for square aspect ratio
+            int size = Math.min(canvas.getWidth(), canvas.getHeight());
+            int xOffset = (canvas.getWidth() - size) / 2;
+            int yOffset = (canvas.getHeight() - size) / 2;
+
             // Convert screen coordinates to world coordinates with bounds checking
             double worldX = Math.max(0, Math.min(world.getWidth(),
-                (canvasPoint.x * world.getWidth()) / canvas.getWidth()));
+                ((canvasPoint.x - xOffset) * world.getWidth()) / size));
             double worldY = Math.max(0, Math.min(world.getHeight(),
-                (canvasPoint.y * world.getHeight()) / canvas.getHeight()));
+                ((canvasPoint.y - yOffset) * world.getHeight()) / size));
 
             // Create and add the particle
-            Particle newParticle = selectedFactory.apply(worldX, worldY);
-            boolean added = world.addParticle(newParticle);
-
-            if (added) {
-                lastSpawnTime = currentTime;  // Update last spawn time
-                System.out.println("Particle added at: " + worldX + "," + worldY);
-            }
+            selectedFactory.apply(worldX, worldY);
+            lastSpawnTime = currentTime;  // Update last spawn time
+            System.out.println("Particle added at: " + worldX + "," + worldY);
         }
     }
 }
