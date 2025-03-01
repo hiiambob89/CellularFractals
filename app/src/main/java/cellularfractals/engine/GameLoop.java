@@ -27,12 +27,22 @@ public class GameLoop {
                 world, 
                 Math.random() * world.getWidth(),
                 Math.random() * world.getHeight(),
-                Math.random() * 20 - 10,
-                Math.random() * 20 - 10,
+                Math.random() * 2 - 1,
+                Math.random() * 2 - 1,
                 100f,
                 1f
             );
             world.addParticle(gravity);
+            GravityParticle antigravity = new GravityParticle(
+                world, 
+                Math.random() * world.getWidth(),
+                Math.random() * world.getHeight(),
+                Math.random() * 2 - 1,
+                Math.random() * 2 - 1,
+                100f,
+                -1f
+            );
+            world.addParticle(antigravity);
         }
     }
 
