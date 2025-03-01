@@ -5,6 +5,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.CountDownLatch;
 
 import cellularfractals.particles.Particle;
 
@@ -72,20 +74,62 @@ public class World {
      * @param deltaTime Time elapsed since last update
      */
     public void update(double deltaTime) {
-        // First apply all effects once to accumulate forces
-        for (Particle particle : particles) {
-            particle.applyEffects();
+        ExecutorService executor = ParticleThreadPool.getExecutor();
+        List<Particle> particleList = new ArrayList<>(particles);
+        int particlesPerThread = Math.max(1, particleList.size() / ParticleThreadPool.THREAD_COUNT);
+        final CountDownLatch latch1 = new CountDownLatch(ParticleThreadPool.THREAD_COUNT);
+
+        // Apply effects in parallel
+        for (int i = 0; i < ParticleThreadPool.THREAD_COUNT; i++) {
+            final int start = i * particlesPerThread;
+            final int end = (i == ParticleThreadPool.THREAD_COUNT - 1) ?
+                           particleList.size() : (i + 1) * particlesPerThread;
+
+            executor.submit(() -> {
+                try {
+                    for (int j = start; j < end; j++) {
+                        particleList.get(j).applyEffects();
+                    }
+                } finally {
+                    latch1.countDown();
+                }
+            });
         }
 
-        // Then break physics movement into substeps
+        try {
+            latch1.await();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+
+        // Physics movement substeps
         double subDelta = deltaTime / PHYSICS_SUBSTEPS;
         for (int i = 0; i < PHYSICS_SUBSTEPS; i++) {
             this.movementStep(subDelta);
         }
 
-        // Finally clear forces after all substeps are done
-        for (Particle particle : particles) {
-            particle.clearForces();
+        // Clear forces in parallel
+        final CountDownLatch latch2 = new CountDownLatch(ParticleThreadPool.THREAD_COUNT);
+        for (int i = 0; i < ParticleThreadPool.THREAD_COUNT; i++) {
+            final int start = i * particlesPerThread;
+            final int end = (i == ParticleThreadPool.THREAD_COUNT - 1) ?
+                           particleList.size() : (i + 1) * particlesPerThread;
+
+            executor.submit(() -> {
+                try {
+                    for (int j = start; j < end; j++) {
+                        particleList.get(j).clearForces();
+                    }
+                } finally {
+                    latch2.countDown();
+                }
+            });
+        }
+
+        try {
+            latch2.await();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
         }
     }
 
@@ -155,64 +199,110 @@ public class World {
      * Performs a movement step for all particles, handling collisions.
      */
     public void movementStep(double deltaTime) {
-        // Check for particle collisions first using predicted positions
-        for (Particle p1 : particles) {
-            // Skip collision detection for particles that don't collide with others
-            if (!p1.canCollideWithParticles()) {
-                continue;
-            }
-            
-            double searchRadius = p1.getRadius() * 4 +
-                                Math.sqrt(p1.getDx() * p1.getDx() + p1.getDy() * p1.getDy()) * deltaTime;
-            List<Particle> nearby = grid.getParticlesInRange(p1.getX(), p1.getY(), searchRadius);
+        ExecutorService executor = ParticleThreadPool.getExecutor();
+        List<Particle> particleList = new ArrayList<>(particles);
+        int particlesPerThread = Math.max(1, particleList.size() / ParticleThreadPool.THREAD_COUNT);
+        CountDownLatch collisionLatch = new CountDownLatch(ParticleThreadPool.THREAD_COUNT);
 
-            double predictedX1 = p1.getX() + p1.getDx() * deltaTime;
-            double predictedY1 = p1.getY() + p1.getDy() * deltaTime;
+        // Check collisions in parallel
+        for (int i = 0; i < ParticleThreadPool.THREAD_COUNT; i++) {
+            final int start = i * particlesPerThread;
+            final int end = (i == ParticleThreadPool.THREAD_COUNT - 1) ?
+                           particleList.size() : (i + 1) * particlesPerThread;
 
-            for (Particle p2 : nearby) {
-                if (p1 == p2) continue;
-                
-                // Skip collisions with particles that don't collide
-                if (!p2.canCollideWithParticles()) {
-                    continue;
+            executor.submit(() -> {
+                try {
+                    for (int j = start; j < end; j++) {
+                        Particle p1 = particleList.get(j);
+                        // Skip collision detection for particles that don't collide with others
+                        if (!p1.canCollideWithParticles()) {
+                            continue;
+                        }
+                        double searchRadius = p1.getRadius() * 4 +
+                            Math.sqrt(p1.getDx() * p1.getDx() + p1.getDy() * p1.getDy()) * deltaTime;
+                        List<Particle> nearby = grid.getParticlesInRange(p1.getX(), p1.getY(), searchRadius);
+
+                        for (Particle p2 : nearby) {
+                            if (p1 == p2 || p1.hashCode() > p2.hashCode()) continue; // Prevent double processing
+                            checkAndHandleCollision(p1, p2, deltaTime);
+                        }
+                    }
+                } finally {
+                    collisionLatch.countDown();
                 }
+            });
+        }
 
-                double predictedX2 = p2.getX() + p2.getDx() * deltaTime;
-                double predictedY2 = p2.getY() + p2.getDy() * deltaTime;
+        try {
+            collisionLatch.await();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
 
-                // Check predicted positions
-                double dx = predictedX2 - predictedX1;
-                double dy = predictedY2 - predictedY1;
-                double distSquared = dx * dx + dy * dy;
-                double collisionDist = p1.getRadius() + p2.getRadius();
+        // Move particles in parallel
+        CountDownLatch movementLatch = new CountDownLatch(ParticleThreadPool.THREAD_COUNT);
+        for (int i = 0; i < ParticleThreadPool.THREAD_COUNT; i++) {
+            final int start = i * particlesPerThread;
+            final int end = (i == ParticleThreadPool.THREAD_COUNT - 1) ?
+                           particleList.size() : (i + 1) * particlesPerThread;
 
-                if (distSquared <= collisionDist * collisionDist) {
+            executor.submit(() -> {
+                try {
+                    for (int j = start; j < end; j++) {
+                        updateParticlePosition(particleList.get(j), deltaTime);
+                    }
+                } finally {
+                    movementLatch.countDown();
+                }
+            });
+        }
+
+        try {
+            movementLatch.await();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+    }
+
+    private void checkAndHandleCollision(Particle p1, Particle p2, double deltaTime) {
+        double predictedX1 = p1.getX() + p1.getDx() * deltaTime;
+        double predictedY1 = p1.getY() + p1.getDy() * deltaTime;
+        double predictedX2 = p2.getX() + p2.getDx() * deltaTime;
+        double predictedY2 = p2.getY() + p2.getDy() * deltaTime;
+
+        double dx = predictedX2 - predictedX1;
+        double dy = predictedY2 - predictedY1;
+        double distSquared = dx * dx + dy * dy;
+        double collisionDist = p1.getRadius() + p2.getRadius();
+
+        if (distSquared <= collisionDist * collisionDist) {
+            synchronized (p1.hashCode() < p2.hashCode() ? p1 : p2) {
+                synchronized (p1.hashCode() < p2.hashCode() ? p2 : p1) {
                     handleCollision(p1, p2);
                 }
             }
         }
+    }
 
-        // Then move all particles with their updated velocities
-        for (Particle particle : particles) {
-            double oldX = particle.getX();
-            double oldY = particle.getY();
-            double newX = oldX + particle.getDx() * deltaTime;
-            double newY = oldY + particle.getDy() * deltaTime;
-            double r = particle.getRadius();
+    private void updateParticlePosition(Particle particle, double deltaTime) {
+        double oldX = particle.getX();
+        double oldY = particle.getY();
+        double newX = oldX + particle.getDx() * deltaTime;
+        double newY = oldY + particle.getDy() * deltaTime;
+        double r = particle.getRadius();
 
-            // Check wall collisions
-            if (newX - r < 0 || newX + r > width) {
-                particle.setVelocity(-particle.getDx(), particle.getDy());
-                newX = Math.max(r, Math.min(width - r, newX));
-            }
-            if (newY - r < 0 || newY + r > height) {
-                particle.setVelocity(particle.getDx(), -particle.getDy());
-                newY = Math.max(r, Math.min(height - r, newY));
-            }
-
-            particle.setPos(newX, newY);
-            grid.updateParticlePosition(particle, oldX, oldY);
+        // Check wall collisions
+        if (newX - r < 0 || newX + r > width) {
+            particle.setVelocity(-particle.getDx(), particle.getDy());
+            newX = Math.max(r, Math.min(width - r, newX));
         }
+        if (newY - r < 0 || newY + r > height) {
+            particle.setVelocity(particle.getDx(), -particle.getDy());
+            newY = Math.max(r, Math.min(height - r, newY));
+        }
+
+        particle.setPos(newX, newY);
+        grid.updateParticlePosition(particle, oldX, oldY);
     }
 
     /**

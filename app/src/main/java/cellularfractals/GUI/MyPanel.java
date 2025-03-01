@@ -10,6 +10,7 @@ import java.util.function.BiFunction;
 import cellularfractals.engine.World;
 import cellularfractals.particles.Particle;
 import cellularfractals.particles.particles.*;
+import cellularfractals.engine.ParticleThreadPool;
 
 public class MyPanel extends JPanel {
     private World world;
@@ -95,14 +96,14 @@ public class MyPanel extends JPanel {
             new BasicParticle(world, x, y, 0, 0));
 
         registerParticleType("Gravity Particle", (x, y) ->
-            new GravityParticle(world, x, y, 0, 0, 100f, 1f));
-            
+            new GravityParticle(world, x, y, 0, 0, 10f, 1f));
+
         registerParticleType("Anti-Gravity Particle", (x, y) ->
             new GravityParticle(world, x, y, 0, 0, 100f, -1f));
 
         registerParticleType("Demo Particle", (x, y) ->
             new DemoParticle(world, x, y, 0, 0));
-            
+
         registerParticleType("Ghost particle", (x, y) ->
             new GhostParticle(world, x, y, 0, 0));
         // Create buttons for each particle type
@@ -243,5 +244,6 @@ public class MyPanel extends JPanel {
         if (updateTimer != null) {
             updateTimer.stop();
         }
+        ParticleThreadPool.shutdown();
     }
 }
