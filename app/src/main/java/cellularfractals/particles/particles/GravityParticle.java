@@ -3,10 +3,11 @@ package cellularfractals.particles.particles;
 import java.awt.Color;
 
 import cellularfractals.engine.World;
+import cellularfractals.particles.Particle;
 import cellularfractals.particles.effects.GravityEffect;
 import cellularfractals.particles.effects.NegativeGravityEffect;
 
-public class GravityParticle extends BasicParticle {
+public class GravityParticle extends Particle {
     private boolean isAttractive; // true = gravity, false = anti-gravity
 
     public GravityParticle(World world, double x, double y, double dx, double dy, Float gravitRange, Float gravityStrength) {
