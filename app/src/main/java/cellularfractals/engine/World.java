@@ -10,11 +10,12 @@ import cellularfractals.particles.Particle;
 import cellularfractals.particles.Effect;
 
 public class World {
-    private final double width;
-    private final double height;
-    private final Grid grid;
-    private final Set<Particle> particles; // Changed to Set
-    private final double effectRange; // Default range for particle effects
+    public final double width;
+    public final double height;
+    public final Grid grid;
+    public final EffectModifierIndex effectModifierIndex;
+    public final Set<Particle> particles; // Changed to Set
+    public final double effectRange; // Default range for particle effects
 
     /**
      * Creates a new simulation world with the specified dimensions.
@@ -27,6 +28,7 @@ public class World {
         this.width = width;
         this.height = height;
         this.grid = new Grid(Math.max(width, height), cellSize);
+        this.effectModifierIndex = new EffectModifierIndex(this);
         // Using ConcurrentHashMap.newKeySet() for thread-safe Set
         this.particles = Collections.newSetFromMap(new ConcurrentHashMap<>());
         this.effectRange = effectRange;
