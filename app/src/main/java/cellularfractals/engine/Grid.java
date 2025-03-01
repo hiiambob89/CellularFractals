@@ -52,7 +52,7 @@ public class Grid {
     public void updateParticlePosition(Particle particle, double oldX, double oldY) {
         Point oldCell = getCellForPosition(oldX, oldY);
         Point newCell = getCellForPosition(particle.getX(), particle.getY());
-        
+
         if (!oldCell.equals(newCell)) {
             cells.get(oldCell).remove(particle);
             cells.computeIfAbsent(newCell, k -> new ArrayList<>()).add(particle);
@@ -69,16 +69,16 @@ public class Grid {
     public List<Particle> getParticlesInRange(double x, double y, double radius) {
         List<Particle> result = new ArrayList<>();
         double radiusSquared = radius * radius;
-        
+
         // Get cells that could contain particles within radius
         int cellRadius = (int) Math.ceil(radius / cellSize);
         Point centerCell = getCellForPosition(x, y);
-        
+
         for (int i = -cellRadius; i <= cellRadius; i++) {
             for (int j = -cellRadius; j <= cellRadius; j++) {
                 Point cell = new Point(centerCell.x + i, centerCell.y + j);
                 List<Particle> particlesInCell = cells.get(cell);
-                
+
                 if (particlesInCell != null) {
                     for (Particle particle : particlesInCell) {
                         double dx = particle.getX() - x;
@@ -90,7 +90,7 @@ public class Grid {
                 }
             }
         }
-        
+
         return result;
     }
 
@@ -119,12 +119,12 @@ public class Grid {
     private static class Point {
         final int x;
         final int y;
-        
+
         Point(int x, int y) {
             this.x = x;
             this.y = y;
         }
-        
+
         @Override
         public boolean equals(Object o) {
             if (this == o) return true;
@@ -132,7 +132,7 @@ public class Grid {
             Point point = (Point) o;
             return x == point.x && y == point.y;
         }
-        
+
         @Override
         public int hashCode() {
             return 31 * x + y;
