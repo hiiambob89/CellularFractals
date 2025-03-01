@@ -87,6 +87,7 @@ public abstract class Particle {
   }
 
   private Set<String> effectModifiers = ConcurrentHashMap.newKeySet();
+public Object type;
 
   public List<String> listEffectModifiers() {
     return new ArrayList<>(effectModifiers);

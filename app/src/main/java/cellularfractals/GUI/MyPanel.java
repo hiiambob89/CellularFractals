@@ -246,6 +246,8 @@ public class MyPanel extends JPanel {
         registerParticleType("Anti-Gravity Particle", (x, y) -> createGravityParticle(x, y, false));
         registerParticleType("Demo Particle", (x, y) -> new DemoParticle(world, x, y, 0, 0));
         registerParticleType("Ghost Particle", (x, y) -> createGhostParticle(x, y));
+        registerParticleType("Magnetic Particle (Positive)", (x, y) -> createMagneticParticle(x, y, "Positive"));
+        registerParticleType("Magnetic Particle (Negative)", (x, y) -> createMagneticParticle(x, y, "Negative"));
 
         for (String type : particleParameters.keySet()) {
             JButton btn = new JButton(type);
@@ -327,6 +329,8 @@ public class MyPanel extends JPanel {
         particleTypeVisibility.put("Anti-Gravity Particle", true);
         particleTypeVisibility.put("Demo Particle", true);
         particleTypeVisibility.put("Ghost Particle", true);
+        particleTypeVisibility.put("Magnetic Particle (Positive)", true);
+        particleTypeVisibility.put("Magnetic Particle (Negative)", true);
     }
 
     private void updateVisibilityPanel() {
@@ -369,7 +373,7 @@ public class MyPanel extends JPanel {
         addSlider(parameterPanel, "Velocity Y", params, "velocityY", -10.0, 10.0);
         addSlider(parameterPanel, "Mass", params, "mass", 0.1, 10.0);
         addSlider(parameterPanel, "Radius", params, "radius", 0.1, 5.0);
-        if (particleType.contains("Gravity")) {
+        if (particleType.contains("Gravity") || particleType.contains("Magnetic")) {
             addSlider(parameterPanel, "Range", params, "range", 1.0, 300.0);
             double strengthMin = particleType.contains("Anti") ? -1.0 : 0.001;
             double strengthMax = particleType.contains("Anti") ? -0.001 : 1;
@@ -424,6 +428,15 @@ public class MyPanel extends JPanel {
         return p;
     }
 
+    private MagneticParticle createMagneticParticle(double x, double y, String polarity) {
+        Map<String, Double> params = particleParameters.get("Magnetic Particle (" + polarity + ")");
+        MagneticParticle p = new MagneticParticle(world, x, y, params.get("velocityX"), params.get("velocityY"),
+            params.get("range").floatValue(), params.get("strength").floatValue(), polarity);
+        p.setMass(params.get("mass"));
+        p.setRadius(params.get("radius"));
+        return p;
+    }
+
     // Parameter map initialization
     private void initializeParameterMap() {
         particleParameters = new HashMap<>();
@@ -453,6 +466,18 @@ public class MyPanel extends JPanel {
         demoParams.put("velocityX", 0.0); demoParams.put("velocityY", 0.0);
         demoParams.put("mass", 1.0); demoParams.put("radius", 0.5);
         particleParameters.put("Demo Particle", demoParams);
+
+        Map<String, Double> magPosParams = new HashMap<>();
+        magPosParams.put("velocityX", 0.0); magPosParams.put("velocityY", 0.0);
+        magPosParams.put("mass", 1.0); magPosParams.put("radius", 0.5);
+        magPosParams.put("range", 100.0); magPosParams.put("strength", 0.005);
+        particleParameters.put("Magnetic Particle (Positive)", magPosParams);
+
+        Map<String, Double> magNegParams = new HashMap<>();
+        magNegParams.put("velocityX", 0.0); magNegParams.put("velocityY", 0.0);
+        magNegParams.put("mass", 1.0); magNegParams.put("radius", 0.5);
+        magNegParams.put("range", 100.0); magNegParams.put("strength", 0.005);
+        particleParameters.put("Magnetic Particle (Negative)", magNegParams);
     }
 
     // Custom canvas with proper visibility filtering
@@ -477,6 +502,9 @@ public class MyPanel extends JPanel {
                 String typeForVisibility;
                 if (particle instanceof GravityParticle) {
                     typeForVisibility = ((GravityParticle) particle).getType();
+                } else if (particle instanceof MagneticParticle) {
+                    MagneticParticle mp = (MagneticParticle)particle;
+                    typeForVisibility = "Magnetic Particle (" + mp.getType() + ")";
                 } else {
                     typeForVisibility = particle.getClass().getSimpleName().replaceAll("([A-Z])", " $1").trim();
                 }
