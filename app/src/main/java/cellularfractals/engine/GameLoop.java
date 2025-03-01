@@ -28,7 +28,7 @@ public class GameLoop {
                 Math.random() * world.getWidth(),
                 Math.random() * world.getHeight(),
                 Math.random() * 20 - 10,
-                Math.random() * 20 - 10,
+                Math.random() * 20 - 10, 
                 100f,
                 1f
             );
