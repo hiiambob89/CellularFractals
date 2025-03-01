@@ -1,0 +1,4 @@
+- Use n-nearest neighbors to decide new cells in a cellular automata
+- Since 2d plane is uniform, add invisible 3d plane 
+- Each point in visible plane is assigned a point in 3d plane
+- Can use noise, or fractal to represent invisible layer
