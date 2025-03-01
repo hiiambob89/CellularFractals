@@ -12,6 +12,9 @@ public class GravityEffect extends Effect {
   public void apply(Particle p) {
     List<Particle> particlesInRange = p.getWorld().grid.getParticlesInRange(p.getX(), p.getY(), range);
     for (Particle particle : particlesInRange) {
+      if (particle == p) {
+        continue;
+      }
       double dx = particle.getX() - p.getX();
       double dy = particle.getY() - p.getY();
       double distance = Math.sqrt(dx * dx + dy * dy);

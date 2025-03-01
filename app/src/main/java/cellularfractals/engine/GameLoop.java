@@ -13,13 +13,11 @@ public class GameLoop {
         world.addParticle(particle);
         GravityParticle gravity = new GravityParticle(world, 0, 0, 0, 0);
         world.addParticle(gravity);
-        world.update(.01);
     }
 
     public void run() {
-        while (true) {
-            world.update(.01);
-            // System.out.println("running");
+        for (int i = 0; i < 20; i++) {
+            world.update(.2);
         }
     }
 }

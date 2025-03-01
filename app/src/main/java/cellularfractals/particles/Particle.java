@@ -115,7 +115,10 @@ public abstract class Particle {
   }
 
   public void moveStep(double deltaTime) {
+    double oldX = x;
+    double oldY = y;
     x += getDx() * deltaTime;
     y += getDy() * deltaTime;
+    this.world.grid.updateParticlePosition(this, oldX, oldY);
   }
 }

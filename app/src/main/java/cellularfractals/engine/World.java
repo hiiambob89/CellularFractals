@@ -76,7 +76,6 @@ public class World {
         // Finally apply accumulated effects
         for (Particle particle : particles) {
             particle.applyEffects();
-            System.out.println(particle.getX()+" "+ particle.getY());
         }
         this.movementStep(deltaTime);
     }
@@ -92,49 +91,32 @@ public class World {
 
         if (dist == 0) return;
 
-        // Normalize the collision vector
+        // Normalize collision vector
         double nx = dx / dist;
         double ny = dy / dist;
 
-        // Calculate relative velocity
+        // Relative velocity
         double rvx = p2.getDx() - p1.getDx();
         double rvy = p2.getDy() - p1.getDy();
         double velAlongNormal = rvx * nx + rvy * ny;
 
-        // Don't resolve if objects are separating
-        if (velAlongNormal > 0) return;
+        if (velAlongNormal > 0) return; // Objects separating
 
-        // Calculate restitution (bounciness)
         double restitution = 0.8;
+        double j = -(1 + restitution) * velAlongNormal / (1/p1.getMass() + 1/p2.getMass());
 
-        // Calculate impulse scalar
-        double j = -(1 + restitution) * velAlongNormal;
-        j /= 1/p1.getMass() + 1/p2.getMass();
+        // Apply impulse directly using Force
+        Force f1 = new Force(-j * nx / p1.getMass(), -j * ny / p1.getMass());
+        p1.addForce(f1);
 
-        // Apply impulse
-        double impulseX = j * nx;
-        double impulseY = j * ny;
-
-        p1.setVelocity(
-            p1.getDx() - (impulseX / p1.getMass()),
-            p1.getDy() - (impulseY / p1.getMass())
-        );
-
-        p2.setVelocity(
-            p2.getDx() + (impulseX / p2.getMass()),
-            p2.getDy() + (impulseY / p2.getMass())
-        );
+        Force f2 = new Force(j * nx / p2.getMass(), j * ny / p2.getMass());
+        p2.addForce(f2);
     }
 
     /**
      * Performs a movement step for all particles, handling collisions.
      */
     public void movementStep(double deltaTime) {
-        // Clear forces from previous step
-        for (Particle particle : particles) {
-            particle.clearForces();
-        }
-
         // First move all particles
         for (Particle particle : particles) {
             particle.moveStep(deltaTime);
@@ -163,9 +145,11 @@ public class World {
                     handleCollision(p1, p2);
                 }
             }
+        }
 
-            // Update particle position in grid after potential collision
-            grid.updateParticlePosition(p1, p1.getX(), p1.getY());
+        // Clear forces from previous step
+        for (Particle particle : particles) {
+            particle.clearForces();
         }
     }
 
