@@ -11,6 +11,8 @@ import cellularfractals.engine.World;
 import cellularfractals.particles.Particle;
 import cellularfractals.particles.particles.*;
 import cellularfractals.engine.ParticleThreadPool;
+import cellularfractals.particles.effects.MouseGravityEffect;
+import cellularfractals.particles.effects.GroundGravityEffect;
 
 public class MyPanel extends JPanel {
     // Existing fields
@@ -32,6 +34,18 @@ public class MyPanel extends JPanel {
     private Map<String, Boolean> particleTypeVisibility = new HashMap<>();
     private JPanel visibilityPanel;
     private boolean visibilityPanelExpanded = true;
+    
+    // Mouse gravity effect fields
+    private MouseGravityEffect mouseGravityEffect;
+    private boolean mouseGravityEnabled = false;
+    private boolean mouseGravityAttractive = true;
+    private float mouseGravityStrength = 1.0f;
+    private float mouseGravityRange = 100f;
+    
+    // Ground gravity effect
+    private GroundGravityEffect groundGravityEffect;
+    private boolean groundGravityEnabled = false;
+    private float groundGravityStrength = 0.1f;
 
     // Add these fields at the top with other fields
     private static volatile double velocityMultiplier = 1.0;
@@ -47,6 +61,16 @@ public class MyPanel extends JPanel {
         this.world = world;
         setLayout(new BorderLayout());
 
+        // Create mouse gravity effect
+        mouseGravityEffect = new MouseGravityEffect(mouseGravityRange, mouseGravityStrength);
+        mouseGravityEffect.setEnabled(false);
+        world.effectModifierIndex.addGlobalEffect(mouseGravityEffect);
+        
+        // Create ground gravity effect
+        groundGravityEffect = new GroundGravityEffect(groundGravityStrength);
+        groundGravityEffect.setEnabled(false);
+        world.effectModifierIndex.addGlobalEffect(groundGravityEffect);
+
         // Create custom canvas
         canvas = new CustomCanvas();
         canvas.setPreferredSize(new Dimension(400, 400));
@@ -57,6 +81,7 @@ public class MyPanel extends JPanel {
         });
         canvas.addMouseMotionListener(new MouseMotionAdapter() {
             @Override public void mouseDragged(MouseEvent e) { handleMouseClick(e); }
+            @Override public void mouseMoved(MouseEvent e) { updateMousePosition(e); }
         });
         add(canvas, BorderLayout.CENTER);
 
@@ -80,6 +105,101 @@ public class MyPanel extends JPanel {
         JCheckBox vectorArrowsToggle = new JCheckBox("Show Vector Arrows", showVectorArrows);
         vectorArrowsToggle.addActionListener(e -> { showVectorArrows = vectorArrowsToggle.isSelected(); canvas.repaint(); });
         controlPanel.add(vectorArrowsToggle, gbc);
+        gbc.gridy++;
+        
+        // Mouse gravity options panel
+        JPanel mouseGravityPanel = new JPanel();
+        mouseGravityPanel.setBorder(BorderFactory.createTitledBorder("Mouse Gravity"));
+        mouseGravityPanel.setLayout(new BoxLayout(mouseGravityPanel, BoxLayout.Y_AXIS));
+        
+        // Mouse gravity toggle
+        JCheckBox mouseGravityToggle = new JCheckBox("Enable Mouse Gravity", mouseGravityEnabled);
+        mouseGravityToggle.addActionListener(e -> {
+            mouseGravityEnabled = mouseGravityToggle.isSelected();
+            mouseGravityEffect.setEnabled(mouseGravityEnabled);
+        });
+        mouseGravityPanel.add(mouseGravityToggle);
+        
+        // Mouse gravity type radio buttons
+        JPanel mouseTypePanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        ButtonGroup mouseTypeGroup = new ButtonGroup();
+        JRadioButton attractiveButton = new JRadioButton("Attractive", mouseGravityAttractive);
+        JRadioButton repulsiveButton = new JRadioButton("Repulsive", !mouseGravityAttractive);
+        
+        attractiveButton.addActionListener(e -> {
+            mouseGravityAttractive = true;
+            mouseGravityEffect.setStrength(Math.abs(mouseGravityStrength));
+        });
+        repulsiveButton.addActionListener(e -> {
+            mouseGravityAttractive = false;
+            mouseGravityEffect.setStrength(-Math.abs(mouseGravityStrength));
+        });
+        
+        mouseTypeGroup.add(attractiveButton);
+        mouseTypeGroup.add(repulsiveButton);
+        mouseTypePanel.add(attractiveButton);
+        mouseTypePanel.add(repulsiveButton);
+        mouseGravityPanel.add(mouseTypePanel);
+        
+        // Mouse gravity strength slider
+        JPanel mouseStrengthPanel = new JPanel(new BorderLayout(5, 0));
+        mouseStrengthPanel.add(new JLabel("Strength:"), BorderLayout.WEST);
+        JSlider mouseStrengthSlider = new JSlider(1, 200, (int)(mouseGravityStrength * 100));
+        JLabel mouseStrengthValueLabel = new JLabel(String.format("%.2f", mouseGravityStrength));
+        mouseStrengthSlider.addChangeListener(e -> {
+            mouseGravityStrength = mouseStrengthSlider.getValue() / 100.0f;
+            mouseStrengthValueLabel.setText(String.format("%.2f", mouseGravityStrength));
+            mouseGravityEffect.setStrength(mouseGravityAttractive ? mouseGravityStrength : -mouseGravityStrength);
+        });
+        mouseStrengthPanel.add(mouseStrengthSlider, BorderLayout.CENTER);
+        mouseStrengthPanel.add(mouseStrengthValueLabel, BorderLayout.EAST);
+        mouseGravityPanel.add(mouseStrengthPanel);
+        
+        // Mouse gravity range slider
+        JPanel mouseRangePanel = new JPanel(new BorderLayout(5, 0));
+        mouseRangePanel.add(new JLabel("Range:"), BorderLayout.WEST);
+        JSlider mouseRangeSlider = new JSlider(10, 300, (int)mouseGravityRange);
+        JLabel mouseRangeValueLabel = new JLabel(String.format("%.0f", mouseGravityRange));
+        mouseRangeSlider.addChangeListener(e -> {
+            mouseGravityRange = mouseRangeSlider.getValue();
+            mouseRangeValueLabel.setText(String.format("%.0f", mouseGravityRange));
+            mouseGravityEffect.setRange(mouseGravityRange);
+        });
+        mouseRangePanel.add(mouseRangeSlider, BorderLayout.CENTER);
+        mouseRangePanel.add(mouseRangeValueLabel, BorderLayout.EAST);
+        mouseGravityPanel.add(mouseRangePanel);
+        
+        controlPanel.add(mouseGravityPanel, gbc);
+        gbc.gridy++;
+        
+        // Ground gravity panel
+        JPanel groundGravityPanel = new JPanel();
+        groundGravityPanel.setBorder(BorderFactory.createTitledBorder("Ground Gravity"));
+        groundGravityPanel.setLayout(new BoxLayout(groundGravityPanel, BoxLayout.Y_AXIS));
+        
+        // Ground gravity toggle
+        JCheckBox groundGravityToggle = new JCheckBox("Enable Ground Gravity", groundGravityEnabled);
+        groundGravityToggle.addActionListener(e -> {
+            groundGravityEnabled = groundGravityToggle.isSelected();
+            groundGravityEffect.setEnabled(groundGravityEnabled);
+        });
+        groundGravityPanel.add(groundGravityToggle);
+        
+        // Ground gravity strength slider
+        JPanel groundStrengthPanel = new JPanel(new BorderLayout(5, 0));
+        groundStrengthPanel.add(new JLabel("Strength:"), BorderLayout.WEST);
+        JSlider groundStrengthSlider = new JSlider(1, 100, (int)(groundGravityStrength * 100));
+        JLabel groundStrengthValueLabel = new JLabel(String.format("%.2f", groundGravityStrength));
+        groundStrengthSlider.addChangeListener(e -> {
+            groundGravityStrength = groundStrengthSlider.getValue() / 100.0f;
+            groundStrengthValueLabel.setText(String.format("%.2f", groundGravityStrength));
+            groundGravityEffect.setStrength(groundGravityStrength);
+        });
+        groundStrengthPanel.add(groundStrengthSlider, BorderLayout.CENTER);
+        groundStrengthPanel.add(groundStrengthValueLabel, BorderLayout.EAST);
+        groundGravityPanel.add(groundStrengthPanel);
+        
+        controlPanel.add(groundGravityPanel, gbc);
         gbc.gridy++;
 
         // Add velocity multiplier slider after the vector arrows toggle and before visibility panel
@@ -187,6 +307,21 @@ public class MyPanel extends JPanel {
             canvas.repaint();
         });
         updateTimer.start();
+    }
+
+    /**
+     * Update the mouse position for the mouse gravity effect
+     */
+    private void updateMousePosition(MouseEvent e) {
+        if (!mouseGravityEnabled) return;
+        
+        // Convert screen coordinates to world coordinates
+        double worldX = Math.max(0, Math.min(world.getWidth(),
+            (e.getX() * world.getWidth()) / canvas.getWidth()));
+        double worldY = Math.max(0, Math.min(world.getHeight(),
+            (e.getY() * world.getHeight()) / canvas.getHeight()));
+            
+        mouseGravityEffect.setPosition(worldX, worldY);
     }
 
     // Visibility methods
@@ -375,6 +510,32 @@ public class MyPanel extends JPanel {
                     int velX = (int)(particle.getDx() * 20 * velocityMultiplier);
                     int velY = (int)(particle.getDy() * 20 * velocityMultiplier);
                     g2d.drawLine(screenX, screenY, screenX + velX, screenY + velY);
+                }
+            }
+            
+            // Draw mouse gravity indicator when enabled
+            if (mouseGravityEnabled) {
+                Point mousePoint = getMousePosition();
+                if (mousePoint != null) {
+                    int indicatorSize = (int)(mouseGravityRange * width / world.getWidth());
+                    g2d.setColor(mouseGravityAttractive ? 
+                        new Color(175, 0, 255, 50) : new Color(255, 0, 175, 50));
+                    g2d.fillOval(
+                        mousePoint.x - indicatorSize/2, 
+                        mousePoint.y - indicatorSize/2, 
+                        indicatorSize, 
+                        indicatorSize
+                    );
+                    
+                    // Draw a small center point
+                    g2d.setColor(mouseGravityAttractive ? 
+                        new Color(175, 0, 255) : new Color(255, 0, 175));
+                    g2d.fillOval(
+                        mousePoint.x - 5, 
+                        mousePoint.y - 5, 
+                        10, 
+                        10
+                    );
                 }
             }
         }

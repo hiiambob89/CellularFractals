@@ -59,6 +59,8 @@ public class World {
         boolean removed = particles.remove(particle);
         if (removed) {
             grid.removeParticle(particle);
+            // Also clean up from effect modifier index
+            effectModifierIndex.removeParticle(particle);
         }
         return removed;
     }
@@ -84,6 +86,9 @@ public class World {
         for (Particle particle : particleList) {
             particle.clearForces();
         }
+
+        // Apply global effects first
+        effectModifierIndex.applyGlobalEffects(deltaTime);
 
         int particlesPerThread = Math.max(1, particleList.size() / ParticleThreadPool.THREAD_COUNT);
         final CountDownLatch latch1 = new CountDownLatch(ParticleThreadPool.THREAD_COUNT);
@@ -316,6 +321,10 @@ public class World {
     public void clear() {
         particles.clear();
         grid.clear();
+        // Also clean up the effect modifier index
+        for (Particle p : getParticles()) {
+            effectModifierIndex.removeParticle(p);
+        }
     }
 
     /**

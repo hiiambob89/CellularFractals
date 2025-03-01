@@ -22,7 +22,7 @@ public class MainFrame extends JFrame {
         customPanel = new MyPanel(world);
         add(customPanel);
 
-        setSize(900, 700);
+        setSize(800, 600);
         setLocationRelativeTo(null);
         
         addWindowListener(new java.awt.event.WindowAdapter() {

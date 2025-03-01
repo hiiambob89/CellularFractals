@@ -31,7 +31,7 @@ public abstract class Particle {
     this.baseVelocityX = dx;
     this.baseVelocityY = dy;
     this.world = world;
-    this.cosmeticSettings = new CosmeticSettings(Color.WHITE); // Initialize with default color
+    this.cosmeticSettings = new CosmeticSettings(); // Initialize with default constructor
     world.addParticle(this);
   }
 
@@ -166,5 +166,27 @@ public abstract class Particle {
    */
   public boolean canCollideWithParticles() {
     return true; // Default behavior: particles collide with each other
+  }
+
+  // Cosmetic settings for particle display
+  public static class CosmeticSettings {
+    public Color color = Color.WHITE;
+    public Color trailColor = Color.CYAN;
+    
+    // Default constructor
+    public CosmeticSettings() {
+      // Default values already set in field declarations
+    }
+    
+    // Constructor with color parameter
+    public CosmeticSettings(Color color) {
+      this.color = color;
+    }
+    
+    // Constructor with both color parameters
+    public CosmeticSettings(Color color, Color trailColor) {
+      this.color = color;
+      this.trailColor = trailColor;
+    }
   }
 }
