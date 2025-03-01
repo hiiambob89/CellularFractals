@@ -213,12 +213,20 @@ public class MyPanel extends JPanel {
                             PARTICLE_SIZE, 
                             PARTICLE_SIZE);
                 
+<<<<<<< HEAD
                 // Draw velocity vector with trail color
                 g2d.setColor(particle.cosmeticSettings != null ? 
                     particle.cosmeticSettings.trailColor : Color.CYAN);
                 int velX = (int)(particle.getDx() * 20); // Scale velocity for visualization
                 int velY = (int)(particle.getDy() * 20);
                 g2d.drawLine(screenX, screenY, screenX + velX, screenY + velY);
+=======
+                // Draw velocity vector
+                g2d.setColor(Color.CYAN);
+                // int velX = (int)(particle.getDx() * 20); // Scale velocity for visualization
+                // int velY = (int)(particle.getDy() * 20);
+                // g2d.drawLine(screenX, screenY, screenX + velX, screenY + velY);
+>>>>>>> origin/main
             }
         }
     }

@@ -1,16 +1,16 @@
 package cellularfractals.engine;
 
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.List;
-import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import cellularfractals.particles.Particle;
 
 public class Grid {
     private final double gridSize;
     private final double cellSize;
-    private final Map<Point, List<Particle>> cells;
+    private final ConcurrentHashMap<Point, List<Particle>> cells;
 
     /**
      * Creates a grid for spatial partitioning of particles.
@@ -20,7 +20,7 @@ public class Grid {
     public Grid(double gridSize, double cellSize) {
         this.gridSize = gridSize;
         this.cellSize = cellSize;
-        this.cells = new HashMap<>();
+        this.cells = new ConcurrentHashMap<>();
     }
 
     /**
@@ -29,7 +29,10 @@ public class Grid {
      */
     public void addParticle(Particle particle) {
         Point cell = getCellForPosition(particle.getX(), particle.getY());
-        cells.computeIfAbsent(cell, k -> new ArrayList<>()).add(particle);
+        cells.computeIfAbsent(cell, k -> Collections.synchronizedList(new ArrayList<>()));
+        synchronized (cells.get(cell)) {
+            cells.get(cell).add(particle);
+        }
     }
 
     /**
@@ -38,8 +41,11 @@ public class Grid {
      */
     public void removeParticle(Particle particle) {
         Point cell = getCellForPosition(particle.getX(), particle.getY());
-        if (cells.containsKey(cell)) {
-            cells.get(cell).remove(particle);
+        List<Particle> cellParticles = cells.get(cell);
+        if (cellParticles != null) {
+            synchronized (cellParticles) {
+                cellParticles.remove(particle);
+            }
         }
     }
 
@@ -54,8 +60,18 @@ public class Grid {
         Point newCell = getCellForPosition(particle.getX(), particle.getY());
 
         if (!oldCell.equals(newCell)) {
-            cells.get(oldCell).remove(particle);
-            cells.computeIfAbsent(newCell, k -> new ArrayList<>()).add(particle);
+            List<Particle> oldCellParticles = cells.get(oldCell);
+            if (oldCellParticles != null) {
+                synchronized (oldCellParticles) {
+                    oldCellParticles.remove(particle);
+                }
+            }
+
+            cells.computeIfAbsent(newCell, k -> Collections.synchronizedList(new ArrayList<>()));
+            List<Particle> newCellParticles = cells.get(newCell);
+            synchronized (newCellParticles) {
+                newCellParticles.add(particle);
+            }
         }
     }
 
@@ -80,11 +96,13 @@ public class Grid {
                 List<Particle> particlesInCell = cells.get(cell);
 
                 if (particlesInCell != null) {
-                    for (Particle particle : particlesInCell) {
-                        double dx = particle.getX() - x;
-                        double dy = particle.getY() - y;
-                        if (dx * dx + dy * dy <= radiusSquared) {
-                            result.add(particle);
+                    synchronized (particlesInCell) {
+                        for (Particle particle : particlesInCell) {
+                            double dx = particle.getX() - x;
+                            double dy = particle.getY() - y;
+                            if (dx * dx + dy * dy <= radiusSquared) {
+                                result.add(particle);
+                            }
                         }
                     }
                 }

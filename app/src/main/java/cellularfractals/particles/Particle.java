@@ -1,10 +1,14 @@
 package cellularfractals.particles;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+<<<<<<< HEAD
 import java.awt.Color;
+=======
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
+>>>>>>> origin/main
 
 import cellularfractals.engine.World;
 import cellularfractals.engine.Force;
@@ -15,7 +19,7 @@ public abstract class Particle {
   private double y;
   private double baseVelocityX;
   private double baseVelocityY;
-  private List<Force> forces = new ArrayList<>();
+  private List<Force> forces = new CopyOnWriteArrayList<>();
   private double mass = 1.0; // Default mass
   public CosmeticSettings cosmeticSettings;
 
@@ -25,7 +29,11 @@ public abstract class Particle {
     this.baseVelocityX = dx;
     this.baseVelocityY = dy;
     this.world = world;
+<<<<<<< HEAD
     this.cosmeticSettings = new CosmeticSettings(Color.WHITE); // Initialize with default color
+=======
+    world.addParticle(this);
+>>>>>>> origin/main
   }
 
   public World getWorld() {
@@ -48,17 +56,23 @@ public abstract class Particle {
     return baseVelocityY + totalAy;
   }
 
-  public void setVelocity(double dx, double dy) {
+  public synchronized void setVelocity(double dx, double dy) {
     this.baseVelocityX = dx;
     this.baseVelocityY = dy;
   }
 
-  public void setPos(double x, double y) {
+  public synchronized void setPos(double x, double y) {
     this.x = x;
     this.y = y;
   }
 
+<<<<<<< HEAD
   private Set<Effect> effects = new HashSet<Effect>();
+=======
+  public CosmeticSettings cosmeticSettings;
+
+  private Set<Effect> effects = ConcurrentHashMap.newKeySet();
+>>>>>>> origin/main
 
   public List<Effect> listEffects() {
     return new ArrayList<>(effects);
@@ -78,8 +92,11 @@ public abstract class Particle {
     }
   }
 
-  private Set<String> defaultEffectModifiers = new HashSet<String>();
-  private Set<String> effectModifiers = new HashSet<String>(defaultEffectModifiers);
+  private Set<String> defaultEffectModifiers = ConcurrentHashMap.newKeySet();
+  private Set<String> effectModifiers = ConcurrentHashMap.newKeySet();
+  {
+    effectModifiers.addAll(defaultEffectModifiers);
+  }
 
   public List<String> listEffectModifiers() {
     return new ArrayList<>(effectModifiers);
@@ -115,7 +132,7 @@ public abstract class Particle {
     this.mass = mass;
   }
 
-  public void moveStep(double deltaTime) {
+  public synchronized void moveStep(double deltaTime) {
     double oldX = x;
     double oldY = y;
     x += getDx() * deltaTime;
