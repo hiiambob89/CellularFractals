@@ -5,7 +5,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 public class ParticleThreadPool {
-    public static final int THREAD_COUNT = Runtime.getRuntime().availableProcessors() / 2;
+    public static final int THREAD_COUNT = Runtime.getRuntime().availableProcessors();
     private static final ExecutorService executor = Executors.newFixedThreadPool(THREAD_COUNT);
 
     public static ExecutorService getExecutor() {
