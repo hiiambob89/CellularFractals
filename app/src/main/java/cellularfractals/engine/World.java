@@ -100,16 +100,16 @@ public class World {
         // For each particle, find nearby particles and apply relevant effects
         for (Particle source : particles) {
             // Get nearby particles using the grid for efficient lookup
+            // This already handles the range checking for us
             List<Particle> nearbyParticles = grid.getParticlesInRange(
                     source.getX(), source.getY(), effectRange);
             
             // Apply effects from this particle to nearby particles
             for (Particle target : nearbyParticles) {
                 if (source != target) { // Don't apply effects to self
+                    // No need to check range again - the grid already did that
                     for (Effect effect : source.listEffects()) {
-                        if (effect.isInRange(source, target)) {
-                            target.addEffect(effect);
-                        }
+                        target.addEffect(effect);
                     }
                 }
             }
