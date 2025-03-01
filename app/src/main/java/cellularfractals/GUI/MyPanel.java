@@ -10,6 +10,7 @@ import java.util.function.BiFunction;
 import cellularfractals.engine.World;
 import cellularfractals.particles.Particle;
 import cellularfractals.particles.particles.*;
+import cellularfractals.engine.ParticleThreadPool;
 
 public class MyPanel extends JPanel {
     private World world;
@@ -460,5 +461,6 @@ public class MyPanel extends JPanel {
         if (updateTimer != null) {
             updateTimer.stop();
         }
+        ParticleThreadPool.shutdown();
     }
 }
