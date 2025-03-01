@@ -47,6 +47,9 @@ public class MyPanel extends JPanel {
     private boolean groundGravityEnabled = false;
     private float groundGravityStrength = 0.1f;
 
+    // Spawn on drag field
+    private boolean spawnOnDrag = false;
+
     public MyPanel(World world) {
         this.world = world;
         setLayout(new BorderLayout());
@@ -70,7 +73,11 @@ public class MyPanel extends JPanel {
             @Override public void mouseClicked(MouseEvent e) { handleMouseClick(e); }
         });
         canvas.addMouseMotionListener(new MouseMotionAdapter() {
-            @Override public void mouseDragged(MouseEvent e) { }
+            @Override public void mouseDragged(MouseEvent e) {
+                if (spawnOnDrag) {
+                    handleMouseClick(e);
+                }
+            }
             @Override public void mouseMoved(MouseEvent e) { updateMousePosition(e); }
         });
         add(canvas, BorderLayout.CENTER);
@@ -266,6 +273,14 @@ public class MyPanel extends JPanel {
         spawnRatePanel.add(spawnRateSlider, BorderLayout.CENTER);
         spawnRatePanel.add(spawnRateLabel, BorderLayout.EAST);
         controlPanel.add(spawnRatePanel, gbc);
+        gbc.gridy++;
+
+        // Spawn on drag toggle
+        JCheckBox spawnOnDragToggle = new JCheckBox("Spawn on Drag", spawnOnDrag);
+        spawnOnDragToggle.addActionListener(e -> {
+            spawnOnDrag = spawnOnDragToggle.isSelected();
+        });
+        controlPanel.add(spawnOnDragToggle, gbc);
         gbc.gridy++;
 
         // Reset button
