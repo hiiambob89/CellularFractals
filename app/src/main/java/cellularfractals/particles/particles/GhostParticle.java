@@ -5,8 +5,11 @@ import java.awt.Color;
 import cellularfractals.engine.World;
 
 /**
- * A particle that is affected by gravity and bounces off walls,
+ * A particle that is affected by gravity and anti-gravity forces and bounces off walls,
  * but passes through other particles without collision.
+ * 
+ * This particle responds to both GravityEffect and NegativeGravityEffect,
+ * but does not collide with other particles.
  */
 public class GhostParticle extends BasicParticle {
     

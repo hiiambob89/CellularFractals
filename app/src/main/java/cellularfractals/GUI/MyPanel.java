@@ -21,7 +21,7 @@ public class MyPanel extends JPanel {
     private Timer updateTimer;
     private Map<String, BiFunction<Double, Double, Particle>> particleFactories = new HashMap<>();
     private BiFunction<Double, Double, Particle> selectedFactory = null;
-    private static final long SPAWN_COOLDOWN = 100;
+    private long spawnCooldown = 100;
     private long lastSpawnTime = 0;
     private boolean showVectorArrows = true;
     private JPanel parameterPanel;
@@ -70,7 +70,7 @@ public class MyPanel extends JPanel {
             @Override public void mouseClicked(MouseEvent e) { handleMouseClick(e); }
         });
         canvas.addMouseMotionListener(new MouseMotionAdapter() {
-            @Override public void mouseDragged(MouseEvent e) { handleMouseClick(e); }
+            @Override public void mouseDragged(MouseEvent e) { }
             @Override public void mouseMoved(MouseEvent e) { updateMousePosition(e); }
         });
         add(canvas, BorderLayout.CENTER);
@@ -254,6 +254,20 @@ public class MyPanel extends JPanel {
             particleButtonsPanel.add(btn);
         }
 
+        // Slider for controlling spawn cooldown
+        JPanel spawnRatePanel = new JPanel(new BorderLayout(5,0));
+        spawnRatePanel.setBorder(BorderFactory.createTitledBorder("Particle Spawn Rate"));
+        JSlider spawnRateSlider = new JSlider(JSlider.HORIZONTAL, 10, 1000, (int)spawnCooldown);
+        JLabel spawnRateLabel = new JLabel(String.format("%d ms", spawnCooldown));
+        spawnRateSlider.addChangeListener(e -> {
+            spawnCooldown = spawnRateSlider.getValue();
+            spawnRateLabel.setText(String.format("%d ms", spawnCooldown));
+        });
+        spawnRatePanel.add(spawnRateSlider, BorderLayout.CENTER);
+        spawnRatePanel.add(spawnRateLabel, BorderLayout.EAST);
+        controlPanel.add(spawnRatePanel, gbc);
+        gbc.gridy++;
+
         // Reset button
         JButton resetButton = new JButton("Reset");
         resetButton.addActionListener(e -> {
@@ -341,7 +355,7 @@ public class MyPanel extends JPanel {
         addSlider(parameterPanel, "Mass", params, "mass", 0.1, 10.0);
         addSlider(parameterPanel, "Radius", params, "radius", 0.1, 5.0);
         if (particleType.contains("Gravity")) {
-            addSlider(parameterPanel, "Range", params, "range", 10.0, 300.0);
+            addSlider(parameterPanel, "Range", params, "range", 1.0, 300.0);
             double strengthMin = particleType.contains("Anti") ? -1.0 : 0.001;
             double strengthMax = particleType.contains("Anti") ? -0.001 : 1;
             addSlider(parameterPanel, "Strength", params, "strength", strengthMin, strengthMax);
@@ -406,13 +420,13 @@ public class MyPanel extends JPanel {
         Map<String, Double> gravityParams = new HashMap<>();
         gravityParams.put("velocityX", 0.0); gravityParams.put("velocityY", 0.0);
         gravityParams.put("mass", 1.0); gravityParams.put("radius", 0.5);
-        gravityParams.put("range", 100.0); gravityParams.put("strength", 1.0);
+        gravityParams.put("range", 100.0); gravityParams.put("strength", .001);
         particleParameters.put("Gravity Particle", gravityParams);
 
         Map<String, Double> antiGravityParams = new HashMap<>();
         antiGravityParams.put("velocityX", 0.0); antiGravityParams.put("velocityY", 0.0);
         antiGravityParams.put("mass", 1.0); antiGravityParams.put("radius", 0.5);
-        antiGravityParams.put("range", 100.0); antiGravityParams.put("strength", -1.0);
+        antiGravityParams.put("range", 100.0); antiGravityParams.put("strength", -0.001);
         particleParameters.put("Anti-Gravity Particle", antiGravityParams);
 
         Map<String, Double> ghostParams = new HashMap<>();
@@ -505,7 +519,7 @@ public class MyPanel extends JPanel {
      */
     private void handleMouseClick(MouseEvent e) {
         long currentTime = System.currentTimeMillis();
-        if (currentTime - lastSpawnTime < SPAWN_COOLDOWN) {
+        if (currentTime - lastSpawnTime < spawnCooldown) {
             return;  // Still in cooldown period
         }
 
