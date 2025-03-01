@@ -18,8 +18,8 @@ public class World {
     public final Set<Particle> particles; // Changed to Set
     private static final int PHYSICS_SUBSTEPS = 4; // Adjust based on needed precision
     private double BOUNDARY_RESTITUTION = 1; // Default boundary restitution
-    private static final double LOW_SPEED_THRESHOLD = 0.0001; // Threshold for low speed
-    private static final double LOW_SPEED_REPULSION = 0.0001; // Strength of repulsion at low speeds
+    private static final double LOW_SPEED_THRESHOLD = 1; // Threshold for low speed
+    private static final double LOW_SPEED_REPULSION = .07; // Strength of repulsion at low speeds
 
     /**
      * Creates a new simulation world with the specified dimensions.
@@ -159,6 +159,7 @@ public class World {
             Force f2 = new Force(nx * repulsionStrength, ny * repulsionStrength);
             p1.addForce(f1);
             p2.addForce(f2);
+            return;
         }
 
         // Calculate impulse
