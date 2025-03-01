@@ -1,13 +1,12 @@
 package cellularfractals.engine;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
-import java.util.Collections;
 import java.util.concurrent.ConcurrentHashMap;
 
 import cellularfractals.particles.Particle;
-import cellularfractals.particles.Effect;
 
 public class World {
     public final double width;
@@ -15,7 +14,6 @@ public class World {
     public final Grid grid;
     public final EffectModifierIndex effectModifierIndex;
     public final Set<Particle> particles; // Changed to Set
-    public final double effectRange; // Default range for particle effects
 
     /**
      * Creates a new simulation world with the specified dimensions.
@@ -24,14 +22,13 @@ public class World {
      * @param cellSize Size of each grid cell for spatial partitioning
      * @param effectRange Default range for particle effects
      */
-    public World(double width, double height, double cellSize, double effectRange) {
+    public World(double width, double height, double cellSize) {
         this.width = width;
         this.height = height;
         this.grid = new Grid(Math.max(width, height), cellSize);
         this.effectModifierIndex = new EffectModifierIndex(this);
         // Using ConcurrentHashMap.newKeySet() for thread-safe Set
         this.particles = Collections.newSetFromMap(new ConcurrentHashMap<>());
-        this.effectRange = effectRange;
     }
 
     /**
@@ -75,38 +72,13 @@ public class World {
      */
     public void update(double deltaTime) {
         // First move particles and handle collisions
-        this.movementStep(deltaTime);
-
-        // Then apply particle effects
-        applyParticleEffects();
 
         // Finally apply accumulated effects
         for (Particle particle : particles) {
             particle.applyEffects();
+            System.out.println(particle.getX()+" "+ particle.getY());
         }
-    }
-
-    /**
-     * Apply effects between particles based on proximity.
-     */
-    private void applyParticleEffects() {
-        // For each particle, find nearby particles and apply relevant effects
-        for (Particle source : particles) {
-            // Get nearby particles using the grid for efficient lookup
-            // This already handles the range checking for us
-            List<Particle> nearbyParticles = grid.getParticlesInRange(
-                    source.getX(), source.getY(), effectRange);
-
-            // Apply effects from this particle to nearby particles
-            for (Particle target : nearbyParticles) {
-                if (source != target) { // Don't apply effects to self
-                    // No need to check range again - the grid already did that
-                    for (Effect effect : source.listEffects()) {
-                        target.addEffect(effect);
-                    }
-                }
-            }
-        }
+        this.movementStep(deltaTime);
     }
 
     /**

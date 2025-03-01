@@ -7,8 +7,8 @@ import cellularfractals.particles.Effect;
 import cellularfractals.particles.Particle;
 
 public class GravityEffect extends Effect {
-  private Float range = 0.0f;
-  private Float strength = 0.0f;
+  private Float range = 10.0f;
+  private Float strength = 1.0f;
   public void apply(Particle p) {
     List<Particle> particlesInRange = p.getWorld().grid.getParticlesInRange(p.getX(), p.getY(), range);
     for (Particle particle : particlesInRange) {
