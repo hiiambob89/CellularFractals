@@ -17,7 +17,9 @@ public class World {
     public final EffectModifierIndex effectModifierIndex;
     public final Set<Particle> particles; // Changed to Set
     private static final int PHYSICS_SUBSTEPS = 4; // Adjust based on needed precision
-    private double BOUNDARY_RESTITUTION = 0.2; // Default boundary restitution
+    private double BOUNDARY_RESTITUTION = 1; // Default boundary restitution
+    private static final double LOW_SPEED_THRESHOLD = 0.0001; // Threshold for low speed
+    private static final double LOW_SPEED_REPULSION = 0.0001; // Strength of repulsion at low speeds
 
     /**
      * Creates a new simulation world with the specified dimensions.
@@ -95,7 +97,7 @@ public class World {
             executor.submit(() -> {
                 try {
                     for (int j = start; j < end; j++) {
-                        particleList.get(j).applyEffects();
+                        particleList.get(j).applyEffects(deltaTime);
                     }
                 } finally {
                     latch1.countDown();
@@ -140,9 +142,19 @@ public class World {
         // Relative velocity
         double rvx = v2x - v1x;
         double rvy = v2y - v1y;
+        double relativeSpeed = Math.sqrt(rvx * rvx + rvy * rvy);
         double velAlongNormal = rvx * nx + rvy * ny;
 
         if (velAlongNormal > 0) return; // Objects separating
+
+        // Add low-speed repulsion
+        if (relativeSpeed < LOW_SPEED_THRESHOLD) {
+            double repulsionStrength = (1.0 - relativeSpeed / LOW_SPEED_THRESHOLD) * LOW_SPEED_REPULSION;
+            Force f1 = new Force(-nx * repulsionStrength, -ny * repulsionStrength);
+            Force f2 = new Force(nx * repulsionStrength, ny * repulsionStrength);
+            p1.addForce(f1);
+            p2.addForce(f2);
+        }
 
         // Calculate impulse
         double restitution = Math.min(p1.getRestitution(), p2.getRestitution());
@@ -248,13 +260,8 @@ public class World {
     }
 
     private void checkAndHandleCollision(Particle p1, Particle p2, double deltaTime) {
-        double predictedX1 = p1.getX() + p1.getDx() * deltaTime;
-        double predictedY1 = p1.getY() + p1.getDy() * deltaTime;
-        double predictedX2 = p2.getX() + p2.getDx() * deltaTime;
-        double predictedY2 = p2.getY() + p2.getDy() * deltaTime;
-
-        double dx = predictedX2 - predictedX1;
-        double dy = predictedY2 - predictedY1;
+        double dx = p2.getX() - p1.getX();
+        double dy = p2.getY() - p1.getY();
         double distSquared = dx * dx + dy * dy;
         double collisionDist = p1.getRadius() + p2.getRadius();
 
@@ -272,21 +279,21 @@ public class World {
         double oldY = particle.getY();
         double newDx = particle.getDx();
         double newDy = particle.getDy();
-        particle.setVelocity(newDx, newDy);
         double newX = oldX + newDx * deltaTime;
         double newY = oldY + newDy * deltaTime;
         double r = particle.getRadius();
 
         // Check wall collisions with boundary restitution
         if (newX - r < 0 || newX + r > width) {
-            particle.setVelocity(-particle.getDx() * BOUNDARY_RESTITUTION, particle.getDy());
+            newDx = -newDx * BOUNDARY_RESTITUTION;
             newX = Math.max(r, Math.min(width - r, newX));
         }
         if (newY - r < 0 || newY + r > height) {
-            particle.setVelocity(particle.getDx(), -particle.getDy() * BOUNDARY_RESTITUTION);
+            newDy = -newDy * BOUNDARY_RESTITUTION;
             newY = Math.max(r, Math.min(height - r, newY));
         }
 
+        particle.setVelocity(newDx, newDy);
         particle.setPos(newX, newY);
         grid.updateParticlePosition(particle, oldX, oldY);
     }

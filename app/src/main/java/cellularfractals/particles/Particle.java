@@ -78,10 +78,10 @@ public abstract class Particle {
     effects.remove(effect);
   }
 
-  public synchronized void applyEffects() {
+  public synchronized void applyEffects(double deltaTime) {
     if (effectsApplied) return;
     for (Effect effect : effects) {
-      effect.apply(this);
+      effect.apply(this, deltaTime); // Assuming effect.apply() method will be updated accordingly
     }
     effectsApplied = true;
   }

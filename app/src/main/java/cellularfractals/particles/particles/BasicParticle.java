@@ -11,5 +11,6 @@ public class BasicParticle extends Particle {
     super(world, x, y, dx, dy);
     this.cosmeticSettings.color = new Color(255,255,255);
     this.addEffect(new GroundGravityEffect(.0007f));
+    this.setRestitution(1);
   }
 }

@@ -7,7 +7,7 @@ import cellularfractals.particles.Particle;
 public class GroundGravityEffect extends Effect {
   private Float strength;
 
-  public void apply(Particle p) {
+  public void apply(Particle p, double deltaTime) {
     p.addForce(new Force(0, strength));
   }
 
