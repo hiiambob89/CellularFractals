@@ -178,7 +178,7 @@ public class MyPanel extends JPanel {
         // Ground gravity strength slider
         JPanel groundStrengthPanel = new JPanel(new BorderLayout(5, 0));
         groundStrengthPanel.add(new JLabel("Strength:"), BorderLayout.WEST);
-        JSlider groundStrengthSlider = new JSlider(1, 100, (int)(groundGravityStrength * 100));
+        JSlider groundStrengthSlider = new JSlider(0, 10, (int)(groundGravityStrength));
         JLabel groundStrengthValueLabel = new JLabel(String.format("%.2f", groundGravityStrength));
         groundStrengthSlider.addChangeListener(e -> {
             groundGravityStrength = groundStrengthSlider.getValue() / 100.0f;
