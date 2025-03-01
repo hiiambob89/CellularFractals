@@ -24,6 +24,7 @@ public abstract class Particle {
     this.baseVelocityX = dx;
     this.baseVelocityY = dy;
     this.world = world;
+    world.addParticle(this);
   }
 
   public World getWorld() {

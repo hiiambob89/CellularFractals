@@ -1,6 +1,7 @@
 package cellularfractals.engine;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -28,7 +29,7 @@ public class Grid {
      */
     public void addParticle(Particle particle) {
         Point cell = getCellForPosition(particle.getX(), particle.getY());
-        cells.computeIfAbsent(cell, k -> new ArrayList<>());
+        cells.computeIfAbsent(cell, k -> Collections.synchronizedList(new ArrayList<>()));
         synchronized (cells.get(cell)) {
             cells.get(cell).add(particle);
         }
@@ -66,7 +67,7 @@ public class Grid {
                 }
             }
 
-            cells.computeIfAbsent(newCell, k -> new ArrayList<>());
+            cells.computeIfAbsent(newCell, k -> Collections.synchronizedList(new ArrayList<>()));
             List<Particle> newCellParticles = cells.get(newCell);
             synchronized (newCellParticles) {
                 newCellParticles.add(particle);
@@ -95,11 +96,13 @@ public class Grid {
                 List<Particle> particlesInCell = cells.get(cell);
 
                 if (particlesInCell != null) {
-                    for (Particle particle : particlesInCell) {
-                        double dx = particle.getX() - x;
-                        double dy = particle.getY() - y;
-                        if (dx * dx + dy * dy <= radiusSquared) {
-                            result.add(particle);
+                    synchronized (particlesInCell) {
+                        for (Particle particle : particlesInCell) {
+                            double dx = particle.getX() - x;
+                            double dy = particle.getY() - y;
+                            if (dx * dx + dy * dy <= radiusSquared) {
+                                result.add(particle);
+                            }
                         }
                     }
                 }
