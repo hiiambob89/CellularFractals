@@ -23,6 +23,7 @@ public class GameLoop {
         world.addParticle(particle);
         
         for (int i = 0; i < 100; i++) {
+        for (int i = 0; i < 100; i++) {
             GravityParticle gravity = new GravityParticle(
                 world, 
                 Math.random() * world.getWidth(),
