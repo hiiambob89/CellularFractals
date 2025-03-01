@@ -1,5 +1,6 @@
 package cellularfractals.engine;
 
+
 public class Force {
   public final double ax;
   public final double ay;

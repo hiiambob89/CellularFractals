@@ -33,6 +33,16 @@ public class MyPanel extends JPanel {
     private JPanel visibilityPanel;
     private boolean visibilityPanelExpanded = true;
 
+    // Add these fields at the top with other fields
+    private static volatile double velocityMultiplier = 1.0;
+    private static final double MIN_VEL_MULT = 0.1;
+    private static final double MAX_VEL_MULT = 10.0;
+
+    // Add a static getter for the velocity multiplier
+    public static double getVelocityMultiplier() {
+        return velocityMultiplier;
+    }
+
     public MyPanel(World world) {
         this.world = world;
         setLayout(new BorderLayout());
@@ -70,6 +80,29 @@ public class MyPanel extends JPanel {
         JCheckBox vectorArrowsToggle = new JCheckBox("Show Vector Arrows", showVectorArrows);
         vectorArrowsToggle.addActionListener(e -> { showVectorArrows = vectorArrowsToggle.isSelected(); canvas.repaint(); });
         controlPanel.add(vectorArrowsToggle, gbc);
+        gbc.gridy++;
+
+        // Add velocity multiplier slider after the vector arrows toggle and before visibility panel
+        JPanel velocityMultPanel = new JPanel(new BorderLayout());
+        velocityMultPanel.setBorder(BorderFactory.createTitledBorder("Velocity Multiplier"));
+        
+        // Create logarithmic slider (0 to 100 represents log scale from 0.1 to 10)
+        JSlider velocityMultSlider = new JSlider(0, 100, 50); // 50 = log(1.0) position
+        JLabel velocityMultLabel = new JLabel(String.format("%.2fx", velocityMultiplier));
+        velocityMultLabel.setPreferredSize(new Dimension(50, 20));
+        
+        velocityMultSlider.addChangeListener(e -> {
+            // Convert linear slider value to logarithmic scale
+            double sliderPct = velocityMultSlider.getValue() / 100.0;
+            velocityMultiplier = MIN_VEL_MULT * Math.pow(MAX_VEL_MULT/MIN_VEL_MULT, sliderPct);
+            velocityMultLabel.setText(String.format("%.2fx", velocityMultiplier));
+            canvas.repaint();
+        });
+        
+        velocityMultPanel.add(velocityMultSlider, BorderLayout.CENTER);
+        velocityMultPanel.add(velocityMultLabel, BorderLayout.EAST);
+        
+        controlPanel.add(velocityMultPanel, gbc);
         gbc.gridy++;
 
         // Visibility panel header
@@ -149,7 +182,7 @@ public class MyPanel extends JPanel {
         add(controlPanel, BorderLayout.EAST);
 
         // Timer for animation
-        updateTimer = new Timer(16, e -> {
+        updateTimer = new Timer(100, e -> { // Update UI every 100ms instead of 16ms
             particleCountLabel.setText("Particles: " + world.getParticleCount());
             canvas.repaint();
         });
@@ -240,7 +273,9 @@ public class MyPanel extends JPanel {
 
     private BasicParticle createBasicParticle(double x, double y) {
         Map<String, Double> params = particleParameters.get("Basic Particle");
-        BasicParticle p = new BasicParticle(world, x, y, params.get("velocityX"), params.get("velocityY"));
+        BasicParticle p = new BasicParticle(world, x, y, 
+            params.get("velocityX"), 
+            params.get("velocityY"));
         p.setMass(params.get("mass")); p.setRadius(params.get("radius"));
         return p;
     }
@@ -248,14 +283,20 @@ public class MyPanel extends JPanel {
     private GravityParticle createGravityParticle(double x, double y, boolean isAttractive) {
         String type = isAttractive ? "Gravity Particle" : "Anti-Gravity Particle";
         Map<String, Double> params = particleParameters.get(type);
-        GravityParticle p = new GravityParticle(world, x, y, params.get("velocityX"), params.get("velocityY"), params.get("range").floatValue(), params.get("strength").floatValue());
+        GravityParticle p = new GravityParticle(world, x, y, 
+            params.get("velocityX"), 
+            params.get("velocityY"),
+            params.get("range").floatValue(), 
+            params.get("strength").floatValue());
         p.setMass(params.get("mass")); p.setRadius(params.get("radius"));
         return p;
     }
 
     private GhostParticle createGhostParticle(double x, double y) {
         Map<String, Double> params = particleParameters.get("Ghost Particle");
-        GhostParticle p = new GhostParticle(world, x, y, params.get("velocityX"), params.get("velocityY"));
+        GhostParticle p = new GhostParticle(world, x, y, 
+            params.get("velocityX"), 
+            params.get("velocityY"));
         p.setMass(params.get("mass")); p.setRadius(params.get("radius"));
         return p;
     }
@@ -309,6 +350,7 @@ public class MyPanel extends JPanel {
                 g2d.drawLine(0, (int)(y*height/world.getHeight()), width, (int)(y*height/world.getHeight()));
             }
             // Draw particles using effective type-checking
+            Rectangle clipBounds = g2d.getClipBounds();
             for (Particle particle : world.getParticles()) {
                 String typeForVisibility;
                 if (particle instanceof GravityParticle) {
@@ -321,13 +363,18 @@ public class MyPanel extends JPanel {
 
                 int screenX = (int)(particle.getX()*width/world.getWidth());
                 int screenY = (int)(particle.getY()*height/world.getHeight());
+                if (screenX < clipBounds.x - 50 || screenX > clipBounds.x + clipBounds.width + 50 ||
+                    screenY < clipBounds.y - 50 || screenY > clipBounds.y + clipBounds.height + 50) {
+                    continue;
+                }
                 int screenRadius = (int)(particle.getRadius()*width/world.getWidth());
                 g2d.setColor(particle.cosmeticSettings != null ? particle.cosmeticSettings.color : Color.WHITE);
                 g2d.fillOval(screenX - screenRadius, screenY - screenRadius, screenRadius * 2, screenRadius * 2);
                 if (showVectorArrows) {
                     g2d.setColor(particle.cosmeticSettings != null ? particle.cosmeticSettings.trailColor : Color.CYAN);
-                    int velX = (int)(particle.getDx()*20), velY = (int)(particle.getDy()*20);
-                    g2d.drawLine(screenX, screenY, screenX+velX, screenY+velY);
+                    int velX = (int)(particle.getDx() * 20 * velocityMultiplier);
+                    int velY = (int)(particle.getDy() * 20 * velocityMultiplier);
+                    g2d.drawLine(screenX, screenY, screenX + velX, screenY + velY);
                 }
             }
         }

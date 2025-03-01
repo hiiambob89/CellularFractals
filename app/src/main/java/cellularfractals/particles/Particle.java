@@ -9,6 +9,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import cellularfractals.engine.World;
 import cellularfractals.engine.Force;
+import cellularfractals.GUI.MyPanel;
 
 public abstract class Particle {
   private World world;
@@ -45,13 +46,11 @@ public abstract class Particle {
   }
 
   public double getDx() {
-    double totalAx = forces.stream().mapToDouble(f -> f.ax).sum();
-    return baseVelocityX + totalAx;
+    return baseVelocityX + forces.stream().mapToDouble(f -> f.ax).sum();
   }
 
   public double getDy() {
-    double totalAy = forces.stream().mapToDouble(f -> f.ay).sum();
-    return baseVelocityY + totalAy;
+    return baseVelocityY + forces.stream().mapToDouble(f -> f.ay).sum();
   }
 
   public synchronized void setVelocity(double dx, double dy) {

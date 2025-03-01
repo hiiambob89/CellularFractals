@@ -22,7 +22,7 @@ public class MainFrame extends JFrame {
         customPanel = new MyPanel(world);
         add(customPanel);
 
-        setSize(800, 600);
+        setSize(900, 700);
         setLocationRelativeTo(null);
         
         addWindowListener(new java.awt.event.WindowAdapter() {
@@ -41,35 +41,39 @@ public class MainFrame extends JFrame {
         
         running = true;
         gameThread = new Thread(() -> {
-            long lastLoopTime = System.nanoTime();
+            long lastUpdateTime = System.nanoTime();
+            double acc = 0;
+            final double FIXED_TIME_STEP = 1.0 / 60.0;
             
             while (running) {
-                long now = System.nanoTime();
-                long updateLength = now - lastLoopTime;
-                lastLoopTime = now;
-                double delta = updateLength / ((double)OPTIMAL_TIME);
-
-                // Update game state
-                world.update(delta);
+                long currentTime = System.nanoTime();
+                // Apply velocity multiplier to deltaTime to affect simulation speed
+                double deltaTime = (currentTime - lastUpdateTime) / 1_000_000_000.0 
+                                 * MyPanel.getVelocityMultiplier();
+                lastUpdateTime = currentTime;
                 
-                // Render
-                customPanel.repaint();
-
-                // Sleep to maintain frame rate
+                acc += deltaTime;
+                
+                // Fixed time step updates
+                while (acc >= FIXED_TIME_STEP) {
+                    world.update(FIXED_TIME_STEP);
+                    acc -= FIXED_TIME_STEP;
+                }
+                
+                // Render at display refresh rate
+                SwingUtilities.invokeLater(() -> customPanel.repaint());
+                
+                // Sleep to limit CPU usage
                 try {
-                    long gameTime = System.nanoTime() - lastLoopTime;
-                    long sleepTime = (OPTIMAL_TIME - gameTime) / 1000000;
-                    
-                    if (sleepTime > 0) {
-                        Thread.sleep(sleepTime);
-                    }
+                    Thread.sleep(1);
                 } catch (InterruptedException e) {
-                    running = false;
-                    throw new RuntimeException("Game loop interrupted", e);
+                    if (!running) break;
+                    Thread.currentThread().interrupt();
                 }
             }
-        });
+        }, "GameLoop");
         
+        gameThread.setPriority(Thread.MAX_PRIORITY);
         gameThread.start();
     }
 
