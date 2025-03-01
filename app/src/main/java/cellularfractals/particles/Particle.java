@@ -22,6 +22,7 @@ public abstract class Particle {
   private double radius = .5; // Default radius
   private double restitution = .8; // Default elasticity (1.0 = perfect elastic, 0.0 = perfect inelastic)
   private double friction = 0.1; // Default friction coefficient for collisions
+  private volatile boolean effectsApplied = false;
 
   public Particle(World world, double x, double y, double dx, double dy) {
     this.x = x;
@@ -77,17 +78,15 @@ public abstract class Particle {
     effects.remove(effect);
   }
 
-  public void applyEffects() {
+  public synchronized void applyEffects() {
+    if (effectsApplied) return;
     for (Effect effect : effects) {
       effect.apply(this);
     }
+    effectsApplied = true;
   }
 
-  private Set<String> defaultEffectModifiers = ConcurrentHashMap.newKeySet();
   private Set<String> effectModifiers = ConcurrentHashMap.newKeySet();
-  {
-    effectModifiers.addAll(defaultEffectModifiers);
-  }
 
   public List<String> listEffectModifiers() {
     return new ArrayList<>(effectModifiers);
@@ -107,12 +106,17 @@ public abstract class Particle {
     return effectModifiers.contains(modifier);
   }
 
+  public List<Force> listForces() {
+    return new ArrayList<>(forces);
+  }
+
   public void addForce(Force force) {
     forces.add(force);
   }
 
   public void clearForces() {
     forces.clear();
+    effectsApplied = false;
   }
 
   public double getMass() {
@@ -158,7 +162,7 @@ public abstract class Particle {
   /**
    * Indicates whether this particle can collide with other particles.
    * Override this in subclasses to modify collision behavior.
-   * 
+   *
    * @return true if this particle should collide with other particles
    */
   public boolean canCollideWithParticles() {

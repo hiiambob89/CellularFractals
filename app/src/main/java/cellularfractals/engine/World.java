@@ -17,6 +17,7 @@ public class World {
     public final EffectModifierIndex effectModifierIndex;
     public final Set<Particle> particles; // Changed to Set
     private static final int PHYSICS_SUBSTEPS = 4; // Adjust based on needed precision
+    private double BOUNDARY_RESTITUTION = 0.2; // Default boundary restitution
 
     /**
      * Creates a new simulation world with the specified dimensions.
@@ -76,6 +77,12 @@ public class World {
     public void update(double deltaTime) {
         ExecutorService executor = ParticleThreadPool.getExecutor();
         List<Particle> particleList = new ArrayList<>(particles);
+
+        // Clear forces and reset effect flags first
+        for (Particle particle : particleList) {
+            particle.clearForces();
+        }
+
         int particlesPerThread = Math.max(1, particleList.size() / ParticleThreadPool.THREAD_COUNT);
         final CountDownLatch latch1 = new CountDownLatch(ParticleThreadPool.THREAD_COUNT);
 
@@ -106,30 +113,6 @@ public class World {
         double subDelta = deltaTime / PHYSICS_SUBSTEPS;
         for (int i = 0; i < PHYSICS_SUBSTEPS; i++) {
             this.movementStep(subDelta);
-        }
-
-        // Clear forces in parallel
-        final CountDownLatch latch2 = new CountDownLatch(ParticleThreadPool.THREAD_COUNT);
-        for (int i = 0; i < ParticleThreadPool.THREAD_COUNT; i++) {
-            final int start = i * particlesPerThread;
-            final int end = (i == ParticleThreadPool.THREAD_COUNT - 1) ?
-                           particleList.size() : (i + 1) * particlesPerThread;
-
-            executor.submit(() -> {
-                try {
-                    for (int j = start; j < end; j++) {
-                        particleList.get(j).clearForces();
-                    }
-                } finally {
-                    latch2.countDown();
-                }
-            });
-        }
-
-        try {
-            latch2.await();
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
         }
     }
 
@@ -162,7 +145,7 @@ public class World {
         if (velAlongNormal > 0) return; // Objects separating
 
         // Calculate impulse
-        double restitution = (p1.getRestitution() + p2.getRestitution()) / 2.0;
+        double restitution = Math.min(p1.getRestitution(), p2.getRestitution());
         double j = -(1 + restitution) * velAlongNormal;
         double impulse = j / (1/p1.getMass() + 1/p2.getMass());
 
@@ -287,17 +270,20 @@ public class World {
     private void updateParticlePosition(Particle particle, double deltaTime) {
         double oldX = particle.getX();
         double oldY = particle.getY();
-        double newX = oldX + particle.getDx() * deltaTime;
-        double newY = oldY + particle.getDy() * deltaTime;
+        double newDx = particle.getDx();
+        double newDy = particle.getDy();
+        particle.setVelocity(newDx, newDy);
+        double newX = oldX + newDx * deltaTime;
+        double newY = oldY + newDy * deltaTime;
         double r = particle.getRadius();
 
-        // Check wall collisions
+        // Check wall collisions with boundary restitution
         if (newX - r < 0 || newX + r > width) {
-            particle.setVelocity(-particle.getDx(), particle.getDy());
+            particle.setVelocity(-particle.getDx() * BOUNDARY_RESTITUTION, particle.getDy());
             newX = Math.max(r, Math.min(width - r, newX));
         }
         if (newY - r < 0 || newY + r > height) {
-            particle.setVelocity(particle.getDx(), -particle.getDy());
+            particle.setVelocity(particle.getDx(), -particle.getDy() * BOUNDARY_RESTITUTION);
             newY = Math.max(r, Math.min(height - r, newY));
         }
 
