@@ -3,12 +3,9 @@ package cellularfractals.particles;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-<<<<<<< HEAD
 import java.awt.Color;
-=======
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
->>>>>>> origin/main
 
 import cellularfractals.engine.World;
 import cellularfractals.engine.Force;
@@ -22,6 +19,9 @@ public abstract class Particle {
   private List<Force> forces = new CopyOnWriteArrayList<>();
   private double mass = 1.0; // Default mass
   public CosmeticSettings cosmeticSettings;
+  private double radius = .5; // Default radius
+  private double restitution = .8; // Default elasticity (1.0 = perfect elastic, 0.0 = perfect inelastic)
+  private double friction = 0.1; // Default friction coefficient for collisions
 
   public Particle(World world, double x, double y, double dx, double dy) {
     this.x = x;
@@ -29,11 +29,8 @@ public abstract class Particle {
     this.baseVelocityX = dx;
     this.baseVelocityY = dy;
     this.world = world;
-<<<<<<< HEAD
     this.cosmeticSettings = new CosmeticSettings(Color.WHITE); // Initialize with default color
-=======
     world.addParticle(this);
->>>>>>> origin/main
   }
 
   public World getWorld() {
@@ -66,13 +63,7 @@ public abstract class Particle {
     this.y = y;
   }
 
-<<<<<<< HEAD
-  private Set<Effect> effects = new HashSet<Effect>();
-=======
-  public CosmeticSettings cosmeticSettings;
-
   private Set<Effect> effects = ConcurrentHashMap.newKeySet();
->>>>>>> origin/main
 
   public List<Effect> listEffects() {
     return new ArrayList<>(effects);
@@ -130,6 +121,30 @@ public abstract class Particle {
 
   public void setMass(double mass) {
     this.mass = mass;
+  }
+
+  public double getRadius() {
+    return radius;
+  }
+
+  public void setRadius(double radius) {
+    this.radius = radius;
+  }
+
+  public double getRestitution() {
+    return restitution;
+  }
+
+  public void setRestitution(double restitution) {
+    this.restitution = Math.max(0.0, Math.min(1.0, restitution));
+  }
+
+  public double getFriction() {
+    return friction;
+  }
+
+  public void setFriction(double friction) {
+    this.friction = Math.max(0.0, friction);
   }
 
   public synchronized void moveStep(double deltaTime) {

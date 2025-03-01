@@ -3,10 +3,6 @@ package cellularfractals.GUI;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
-import java.awt.geom.AffineTransform;
-import java.awt.image.BufferedImage;
-import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.BiFunction;
@@ -14,7 +10,6 @@ import java.util.function.BiFunction;
 import cellularfractals.engine.World;
 import cellularfractals.particles.Particle;
 import cellularfractals.particles.particles.*;
-import cellularfractals.particles.CosmeticSettings;
 
 public class MyPanel extends JPanel {
     private World world;
@@ -32,7 +27,7 @@ public class MyPanel extends JPanel {
         // Create custom canvas for particle visualization
         canvas = new CustomCanvas();
         canvas.setPreferredSize(new Dimension(400, 400));
-        
+
         // Add both mouse listener and mouse motion listener for better click detection
         canvas.addMouseListener(new MouseAdapter() {
             @Override
@@ -58,7 +53,7 @@ public class MyPanel extends JPanel {
                 handleMouseClick(e);
             }
         });
-        
+
         add(canvas, BorderLayout.CENTER);
 
         // Create control panel with GridBagLayout for better organization
@@ -84,15 +79,15 @@ public class MyPanel extends JPanel {
 
         /*
          * PUT PARTICLE TYPES HERE WITH CORRECT INFO FOUND IN CONSTRUCTOR FOR THE PARTICLE CLASS PLZ
-         * 
+         *
          */
-        registerParticleType("Basic Particle", (x, y) -> 
+        registerParticleType("Basic Particle", (x, y) ->
             new BasicParticle(world, x, y, 0, 0));
-        
-        registerParticleType("Gravity Particle", (x, y) -> 
+
+        registerParticleType("Gravity Particle", (x, y) ->
             new GravityParticle(world, x, y, 0, 0, 100f, 1f));
-        
-        registerParticleType("Demo Particle", (x, y) -> 
+
+        registerParticleType("Demo Particle", (x, y) ->
             new DemoParticle(world, x, y, 0, 0));
 
         // Create buttons for each particle type
@@ -146,17 +141,17 @@ public class MyPanel extends JPanel {
 
         if (selectedFactory != null && canvas.getBounds().contains(e.getPoint())) {
             Point canvasPoint = SwingUtilities.convertPoint(e.getComponent(), e.getPoint(), canvas);
-            
+
             // Convert screen coordinates to world coordinates with bounds checking
-            double worldX = Math.max(0, Math.min(world.getWidth(), 
+            double worldX = Math.max(0, Math.min(world.getWidth(),
                 (canvasPoint.x * world.getWidth()) / canvas.getWidth()));
-            double worldY = Math.max(0, Math.min(world.getHeight(), 
+            double worldY = Math.max(0, Math.min(world.getHeight(),
                 (canvasPoint.y * world.getHeight()) / canvas.getHeight()));
-            
+
             // Create and add the particle
             Particle newParticle = selectedFactory.apply(worldX, worldY);
             boolean added = world.addParticle(newParticle);
-            
+
             if (added) {
                 lastSpawnTime = currentTime;  // Update last spawn time
                 System.out.println("Particle added at: " + worldX + "," + worldY);
@@ -165,8 +160,7 @@ public class MyPanel extends JPanel {
     }
 
     private class CustomCanvas extends JPanel {
-        private static final int PARTICLE_SIZE = 6;
-        
+
         public CustomCanvas() {
             setBackground(Color.BLACK);
         }
@@ -175,9 +169,9 @@ public class MyPanel extends JPanel {
         protected void paintComponent(Graphics g) {
             super.paintComponent(g);
             Graphics2D g2d = (Graphics2D) g;
-            
+
             // Enable antialiasing
-            g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, 
+            g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
                                 RenderingHints.VALUE_ANTIALIAS_ON);
 
             // Draw grid lines
@@ -185,13 +179,13 @@ public class MyPanel extends JPanel {
             double cellSize = 10.0;
             int width = getWidth();
             int height = getHeight();
-            
+
             // Vertical lines
             for (double x = 0; x < world.getWidth(); x += cellSize) {
                 int screenX = (int)(x * width / world.getWidth());
                 g2d.drawLine(screenX, 0, screenX, height);
             }
-            
+
             // Horizontal lines
             for (double y = 0; y < world.getHeight(); y += cellSize) {
                 int screenY = (int)(y * height / world.getHeight());
@@ -203,30 +197,25 @@ public class MyPanel extends JPanel {
                 // Convert world coordinates to screen coordinates
                 int screenX = (int)(particle.getX() * width / world.getWidth());
                 int screenY = (int)(particle.getY() * height / world.getHeight());
-                
+
+                // Calculate screen radius (scale the world radius to screen coordinates)
+                int screenRadius = (int)(particle.getRadius() * width / world.getWidth());
+
                 // Use particle's cosmetic settings
-                g2d.setColor(particle.cosmeticSettings != null ? 
+                g2d.setColor(particle.cosmeticSettings != null ?
                     particle.cosmeticSettings.color : Color.WHITE);
-                
-                g2d.fillOval(screenX - PARTICLE_SIZE/2, 
-                            screenY - PARTICLE_SIZE/2, 
-                            PARTICLE_SIZE, 
-                            PARTICLE_SIZE);
-                
-<<<<<<< HEAD
-                // Draw velocity vector with trail color
-                g2d.setColor(particle.cosmeticSettings != null ? 
+
+                g2d.fillOval(screenX - screenRadius,
+                            screenY - screenRadius,
+                            screenRadius * 2,
+                            screenRadius * 2);
+
+                // Draw velocity vector from center of particle with trail color
+                g2d.setColor(particle.cosmeticSettings != null ?
                     particle.cosmeticSettings.trailColor : Color.CYAN);
                 int velX = (int)(particle.getDx() * 20); // Scale velocity for visualization
                 int velY = (int)(particle.getDy() * 20);
                 g2d.drawLine(screenX, screenY, screenX + velX, screenY + velY);
-=======
-                // Draw velocity vector
-                g2d.setColor(Color.CYAN);
-                // int velX = (int)(particle.getDx() * 20); // Scale velocity for visualization
-                // int velY = (int)(particle.getDy() * 20);
-                // g2d.drawLine(screenX, screenY, screenX + velX, screenY + velY);
->>>>>>> origin/main
             }
         }
     }
