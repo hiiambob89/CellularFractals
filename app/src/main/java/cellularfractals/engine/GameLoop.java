@@ -7,11 +7,11 @@ import cellularfractals.particles.particles.GravityParticle;
 public class GameLoop {
     private World world;
     private MainFrame frame;
-    
+
     public GameLoop(World world) {
         this.world = world;
         initializeParticles();
-        
+
         // Create and show the GUI
         javax.swing.SwingUtilities.invokeLater(() -> {
             frame = new MainFrame(world);
@@ -20,11 +20,10 @@ public class GameLoop {
 
     private void initializeParticles() {
         BasicParticle particle = new BasicParticle(world, 25, 25, 0, 0);
-        world.addParticle(particle);
-        
+
         for (int i = 0; i < 100; i++) {
             GravityParticle gravity = new GravityParticle(
-                world, 
+                world,
                 Math.random() * world.getWidth(),
                 Math.random() * world.getHeight(),
                 Math.random() * 2 - 1,
@@ -32,9 +31,8 @@ public class GameLoop {
                 100f,
                 1f
             );
-            world.addParticle(gravity);
             GravityParticle antigravity = new GravityParticle(
-                world, 
+                world,
                 Math.random() * world.getWidth(),
                 Math.random() * world.getHeight(),
                 Math.random() * 2 - 1,
@@ -42,7 +40,6 @@ public class GameLoop {
                 100f,
                 -1f
             );
-            world.addParticle(antigravity);
         }
     }
 
