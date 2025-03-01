@@ -75,7 +75,7 @@ public class World {
      */
     public void update(double deltaTime) {
         // First move particles and handle collisions
-        movementStep();
+        this.movementStep(deltaTime);
 
         // Then apply particle effects
         applyParticleEffects();
@@ -114,40 +114,58 @@ public class World {
      * Implements simple elastic collision.
      */
     private void handleCollision(Particle p1, Particle p2) {
-        // Calculate collision normal
         double dx = p2.getX() - p1.getX();
         double dy = p2.getY() - p1.getY();
         double dist = Math.sqrt(dx * dx + dy * dy);
 
-        if (dist == 0) return; // Avoid division by zero
+        if (dist == 0) return;
 
         // Normalize the collision vector
-        dx /= dist;
-        dy /= dist;
+        double nx = dx / dist;
+        double ny = dy / dist;
 
-        // Project velocities onto collision normal
-        double p1Proj = p1.getDx() * dx + p1.getDy() * dy;
-        double p2Proj = p2.getDx() * dx + p2.getDy() * dy;
+        // Calculate relative velocity
+        double rvx = p2.getDx() - p1.getDx();
+        double rvy = p2.getDy() - p1.getDy();
+        double velAlongNormal = rvx * nx + rvy * ny;
 
-        // Calculate new velocities (simple elastic collision)
+        // Don't resolve if objects are separating
+        if (velAlongNormal > 0) return;
+
+        // Calculate restitution (bounciness)
+        double restitution = 0.8;
+
+        // Calculate impulse scalar
+        double j = -(1 + restitution) * velAlongNormal;
+        j /= 1/p1.getMass() + 1/p2.getMass();
+
+        // Apply impulse
+        double impulseX = j * nx;
+        double impulseY = j * ny;
+
         p1.setVelocity(
-            p1.getDx() + dx * (p2Proj - p1Proj),
-            p1.getDy() + dy * (p2Proj - p1Proj)
+            p1.getDx() - (impulseX / p1.getMass()),
+            p1.getDy() - (impulseY / p1.getMass())
         );
 
         p2.setVelocity(
-            p2.getDx() + dx * (p1Proj - p2Proj),
-            p2.getDy() + dy * (p1Proj - p2Proj)
+            p2.getDx() + (impulseX / p2.getMass()),
+            p2.getDy() + (impulseY / p2.getMass())
         );
     }
 
     /**
      * Performs a movement step for all particles, handling collisions.
      */
-    public void movementStep() {
+    public void movementStep(double deltaTime) {
+        // Clear forces from previous step
+        for (Particle particle : particles) {
+            particle.clearForces();
+        }
+
         // First move all particles
         for (Particle particle : particles) {
-            particle.move();
+            particle.moveStep(deltaTime);
 
             // Bounce off world boundaries
             if (particle.getX() < 0 || particle.getX() > width) {

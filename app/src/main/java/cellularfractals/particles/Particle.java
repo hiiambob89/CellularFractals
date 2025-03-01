@@ -6,19 +6,22 @@ import java.util.List;
 import java.util.Set;
 
 import cellularfractals.engine.World;
+import cellularfractals.engine.Force;
 
 public abstract class Particle {
   private World world;
   private double x;
   private double y;
-  private double dx;
-  private double dy;
+  private double baseVelocityX;
+  private double baseVelocityY;
+  private List<Force> forces = new ArrayList<>();
+  private double mass = 1.0; // Default mass
 
   public Particle(World world, double x, double y, double dx, double dy) {
     this.x = x;
     this.y = y;
-    this.dx = dx;
-    this.dy = dy;
+    this.baseVelocityX = dx;
+    this.baseVelocityY = dy;
     this.world = world;
   }
 
@@ -31,24 +34,20 @@ public abstract class Particle {
   public double getY() {
     return y;
   }
+
   public double getDx() {
-    return dx;
-  }
-  public double getDy() {
-    return dy;
-  }
-  public void setWorld(World world) {
-    this.world = world;
+    double totalAx = forces.stream().mapToDouble(f -> f.ax).sum();
+    return baseVelocityX + totalAx;
   }
 
-  public void move() {
-    x += dx;
-    y += dy;
+  public double getDy() {
+    double totalAy = forces.stream().mapToDouble(f -> f.ay).sum();
+    return baseVelocityY + totalAy;
   }
 
   public void setVelocity(double dx, double dy) {
-    this.dx = dx;
-    this.dy = dy;
+    this.baseVelocityX = dx;
+    this.baseVelocityY = dy;
   }
 
   public void setPos(double x, double y) {
@@ -97,5 +96,26 @@ public abstract class Particle {
 
   public boolean hasEffectModifier(String modifier) {
     return effectModifiers.contains(modifier);
+  }
+
+  public void addForce(Force force) {
+    forces.add(force);
+  }
+
+  public void clearForces() {
+    forces.clear();
+  }
+
+  public double getMass() {
+    return mass;
+  }
+
+  public void setMass(double mass) {
+    this.mass = mass;
+  }
+
+  public void moveStep(double deltaTime) {
+    x += getDx() * deltaTime;
+    y += getDy() * deltaTime;
   }
 }
