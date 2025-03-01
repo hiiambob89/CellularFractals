@@ -154,4 +154,14 @@ public abstract class Particle {
     y += getDy() * deltaTime;
     this.world.grid.updateParticlePosition(this, oldX, oldY);
   }
+
+  /**
+   * Indicates whether this particle can collide with other particles.
+   * Override this in subclasses to modify collision behavior.
+   * 
+   * @return true if this particle should collide with other particles
+   */
+  public boolean canCollideWithParticles() {
+    return true; // Default behavior: particles collide with each other
+  }
 }

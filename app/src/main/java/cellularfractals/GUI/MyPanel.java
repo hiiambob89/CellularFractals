@@ -19,6 +19,7 @@ public class MyPanel extends JPanel {
     private BiFunction<Double, Double, Particle> selectedFactory = null;
     private static final long SPAWN_COOLDOWN = 100; // 50ms cooldown
     private long lastSpawnTime = 0;
+    private boolean showVectorArrows = true; // New field to track vector arrow visibility
 
     public MyPanel(World world) {
         this.world = world;
@@ -71,6 +72,15 @@ public class MyPanel extends JPanel {
         controlPanel.add(particleCountLabel, gbc);
         gbc.gridy++;
 
+        // Add vector arrows toggle
+        JCheckBox vectorArrowsToggle = new JCheckBox("Show Vector Arrows", showVectorArrows);
+        vectorArrowsToggle.addActionListener(e -> {
+            showVectorArrows = vectorArrowsToggle.isSelected();
+            canvas.repaint();
+        });
+        controlPanel.add(vectorArrowsToggle, gbc);
+        gbc.gridy++;
+
         // Add particle type buttons panel
         JPanel particleButtonsPanel = new JPanel(new GridLayout(0, 1, 2, 2));
         particleButtonsPanel.setBorder(BorderFactory.createTitledBorder("Spawn Particles"));
@@ -86,10 +96,15 @@ public class MyPanel extends JPanel {
 
         registerParticleType("Gravity Particle", (x, y) ->
             new GravityParticle(world, x, y, 0, 0, 100f, 1f));
+            
+        registerParticleType("Anti-Gravity Particle", (x, y) ->
+            new GravityParticle(world, x, y, 0, 0, 100f, -1f));
 
         registerParticleType("Demo Particle", (x, y) ->
             new DemoParticle(world, x, y, 0, 0));
-
+            
+        registerParticleType("Ghost particle", (x, y) ->
+            new GhostParticle(world, x, y, 0, 0));
         // Create buttons for each particle type
         for (Map.Entry<String, BiFunction<Double, Double, Particle>> entry : particleFactories.entrySet()) {
             JButton button = new JButton(entry.getKey());
@@ -211,11 +226,14 @@ public class MyPanel extends JPanel {
                             screenRadius * 2);
 
                 // Draw velocity vector from center of particle with trail color
-                g2d.setColor(particle.cosmeticSettings != null ?
-                    particle.cosmeticSettings.trailColor : Color.CYAN);
-                int velX = (int)(particle.getDx() * 20); // Scale velocity for visualization
-                int velY = (int)(particle.getDy() * 20);
-                g2d.drawLine(screenX, screenY, screenX + velX, screenY + velY);
+                // Only if vector arrows are enabled
+                if (showVectorArrows) {
+                    g2d.setColor(particle.cosmeticSettings != null ?
+                        particle.cosmeticSettings.trailColor : Color.CYAN);
+                    int velX = (int)(particle.getDx() * 20); // Scale velocity for visualization
+                    int velY = (int)(particle.getDy() * 20);
+                    g2d.drawLine(screenX, screenY, screenX + velX, screenY + velY);
+                }
             }
         }
     }

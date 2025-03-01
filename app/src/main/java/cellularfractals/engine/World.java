@@ -157,6 +157,11 @@ public class World {
     public void movementStep(double deltaTime) {
         // Check for particle collisions first using predicted positions
         for (Particle p1 : particles) {
+            // Skip collision detection for particles that don't collide with others
+            if (!p1.canCollideWithParticles()) {
+                continue;
+            }
+            
             double searchRadius = p1.getRadius() * 4 +
                                 Math.sqrt(p1.getDx() * p1.getDx() + p1.getDy() * p1.getDy()) * deltaTime;
             List<Particle> nearby = grid.getParticlesInRange(p1.getX(), p1.getY(), searchRadius);
@@ -166,6 +171,11 @@ public class World {
 
             for (Particle p2 : nearby) {
                 if (p1 == p2) continue;
+                
+                // Skip collisions with particles that don't collide
+                if (!p2.canCollideWithParticles()) {
+                    continue;
+                }
 
                 double predictedX2 = p2.getX() + p2.getDx() * deltaTime;
                 double predictedY2 = p2.getY() + p2.getDy() * deltaTime;
