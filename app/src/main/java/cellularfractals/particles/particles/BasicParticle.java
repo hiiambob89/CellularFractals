@@ -8,6 +8,6 @@ import cellularfractals.particles.Particle;
 public class BasicParticle extends Particle {
   public BasicParticle(World world, double x, double y, double dx, double dy) {
     super(world, x, y, dx, dy);
-    this.cosmeticSettings.color = new Color(0,255,0);
+    this.cosmeticSettings.color = new Color(255,255,255);
   }
 }
