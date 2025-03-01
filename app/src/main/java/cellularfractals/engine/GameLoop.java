@@ -22,13 +22,13 @@ public class GameLoop {
         BasicParticle particle = new BasicParticle(world, 25, 25, 0, 0);
         world.addParticle(particle);
         
-        for (int i = 0; i < 1000; i++) {
+        for (int i = 0; i < 100; i++) {
             GravityParticle gravity = new GravityParticle(
                 world, 
                 Math.random() * world.getWidth(),
                 Math.random() * world.getHeight(),
-                Math.random() * 200 - 100,
-                Math.random() * 200 - 100,
+                Math.random() * 20 - 10,
+                Math.random() * 20 - 10,
                 100f,
                 1f
             );
