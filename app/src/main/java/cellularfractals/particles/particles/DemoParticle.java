@@ -1,5 +1,7 @@
 package cellularfractals.particles.particles;
 
+import java.awt.Color;
+
 import cellularfractals.engine.World;
 import cellularfractals.particles.Particle;
 
