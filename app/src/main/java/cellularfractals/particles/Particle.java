@@ -19,7 +19,7 @@ public abstract class Particle {
   private List<Force> forces = new CopyOnWriteArrayList<>();
   private double mass = 1.0; // Default mass
   public CosmeticSettings cosmeticSettings;
-  private double radius = .5; // Default radius
+  private double radius = .01; // Default radius
   private double restitution = .8; // Default elasticity (1.0 = perfect elastic, 0.0 = perfect inelastic)
   private double friction = 0.1; // Default friction coefficient for collisions
   private volatile boolean effectsApplied = false;
@@ -173,17 +173,17 @@ public abstract class Particle {
   public static class CosmeticSettings {
     public Color color = Color.WHITE;
     public Color trailColor = Color.CYAN;
-    
+
     // Default constructor
     public CosmeticSettings() {
       // Default values already set in field declarations
     }
-    
+
     // Constructor with color parameter
     public CosmeticSettings(Color color) {
       this.color = color;
     }
-    
+
     // Constructor with both color parameters
     public CosmeticSettings(Color color, Color trailColor) {
       this.color = color;
