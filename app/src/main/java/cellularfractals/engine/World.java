@@ -14,6 +14,7 @@ public class World {
     public final Grid grid;
     public final EffectModifierIndex effectModifierIndex;
     public final Set<Particle> particles; // Changed to Set
+    private static final int PHYSICS_SUBSTEPS = 4; // Adjust based on needed precision
 
     /**
      * Creates a new simulation world with the specified dimensions.
@@ -71,13 +72,21 @@ public class World {
      * @param deltaTime Time elapsed since last update
      */
     public void update(double deltaTime) {
-        // First move particles and handle collisions
-
-        // Finally apply accumulated effects
+        // First apply all effects once to accumulate forces
         for (Particle particle : particles) {
             particle.applyEffects();
         }
-        this.movementStep(deltaTime);
+
+        // Then break physics movement into substeps
+        double subDelta = deltaTime / PHYSICS_SUBSTEPS;
+        for (int i = 0; i < PHYSICS_SUBSTEPS; i++) {
+            this.movementStep(subDelta);
+        }
+
+        // Finally clear forces after all substeps are done
+        for (Particle particle : particles) {
+            particle.clearForces();
+        }
     }
 
     /**
@@ -95,21 +104,50 @@ public class World {
         double nx = dx / dist;
         double ny = dy / dist;
 
+        // Get current velocities
+        double v1x = p1.getDx();
+        double v1y = p1.getDy();
+        double v2x = p2.getDx();
+        double v2y = p2.getDy();
+
         // Relative velocity
-        double rvx = p2.getDx() - p1.getDx();
-        double rvy = p2.getDy() - p1.getDy();
+        double rvx = v2x - v1x;
+        double rvy = v2y - v1y;
         double velAlongNormal = rvx * nx + rvy * ny;
 
         if (velAlongNormal > 0) return; // Objects separating
 
-        double restitution = 0.8;
-        double j = -(1 + restitution) * velAlongNormal / (1/p1.getMass() + 1/p2.getMass());
+        // Calculate impulse
+        double restitution = (p1.getRestitution() + p2.getRestitution()) / 2.0;
+        double j = -(1 + restitution) * velAlongNormal;
+        double impulse = j / (1/p1.getMass() + 1/p2.getMass());
 
-        // Apply impulse directly using Force
-        Force f1 = new Force(-j * nx / p1.getMass(), -j * ny / p1.getMass());
+        // Apply impulse along normal
+        double impulsex = impulse * nx;
+        double impulsey = impulse * ny;
+
+        // Calculate new velocities
+        double newV1x = v1x - (impulsex / p1.getMass());
+        double newV1y = v1y - (impulsey / p1.getMass());
+        double newV2x = v2x + (impulsex / p2.getMass());
+        double newV2y = v2y + (impulsey / p2.getMass());
+
+        // Set new velocities
+        p1.setVelocity(newV1x, newV1y);
+        p2.setVelocity(newV2x, newV2y);
+
+        // Apply friction (tangential impulse)
+        double friction = Math.min(p1.getFriction(), p2.getFriction());
+        double tx = -ny;
+        double ty = nx;
+        double velAlongTangent = rvx * tx + rvy * ty;
+        double jt = -friction * velAlongTangent / (1/p1.getMass() + 1/p2.getMass());
+
+        // Apply tangential forces
+        Force f1 = new Force(-jt * tx / p1.getMass(), -jt * ty / p1.getMass());
+        Force f2 = new Force(jt * tx / p2.getMass(), jt * ty / p2.getMass());
+
         p1.addForce(f1);
-
-        Force f2 = new Force(j * nx / p2.getMass(), j * ny / p2.getMass());
         p2.addForce(f2);
     }
 
@@ -117,39 +155,53 @@ public class World {
      * Performs a movement step for all particles, handling collisions.
      */
     public void movementStep(double deltaTime) {
-        // First move all particles
-        for (Particle particle : particles) {
-            particle.moveStep(deltaTime);
-
-            // Bounce off world boundaries
-            if (particle.getX() < 0 || particle.getX() > width) {
-                particle.setVelocity(-particle.getDx(), particle.getDy());
-            }
-            if (particle.getY() < 0 || particle.getY() > height) {
-                particle.setVelocity(particle.getDx(), -particle.getDy());
-            }
-        }
-
-        // Check for collisions
+        // Check for particle collisions first using predicted positions
         for (Particle p1 : particles) {
-            List<Particle> nearby = grid.getParticlesInRange(p1.getX(), p1.getY(), 2.0); // Assuming particle size ~1.0
+            double searchRadius = p1.getRadius() * 4 +
+                                Math.sqrt(p1.getDx() * p1.getDx() + p1.getDy() * p1.getDy()) * deltaTime;
+            List<Particle> nearby = grid.getParticlesInRange(p1.getX(), p1.getY(), searchRadius);
+
+            double predictedX1 = p1.getX() + p1.getDx() * deltaTime;
+            double predictedY1 = p1.getY() + p1.getDy() * deltaTime;
+
             for (Particle p2 : nearby) {
                 if (p1 == p2) continue;
 
-                // Simple collision detection using distance
-                double dx = p2.getX() - p1.getX();
-                double dy = p2.getY() - p1.getY();
-                double distSquared = dx * dx + dy * dy;
+                double predictedX2 = p2.getX() + p2.getDx() * deltaTime;
+                double predictedY2 = p2.getY() + p2.getDy() * deltaTime;
 
-                if (distSquared < 1.0) { // Assuming particle radius of 0.5
+                // Check predicted positions
+                double dx = predictedX2 - predictedX1;
+                double dy = predictedY2 - predictedY1;
+                double distSquared = dx * dx + dy * dy;
+                double collisionDist = p1.getRadius() + p2.getRadius();
+
+                if (distSquared <= collisionDist * collisionDist) {
                     handleCollision(p1, p2);
                 }
             }
         }
 
-        // Clear forces from previous step
+        // Then move all particles with their updated velocities
         for (Particle particle : particles) {
-            particle.clearForces();
+            double oldX = particle.getX();
+            double oldY = particle.getY();
+            double newX = oldX + particle.getDx() * deltaTime;
+            double newY = oldY + particle.getDy() * deltaTime;
+            double r = particle.getRadius();
+
+            // Check wall collisions
+            if (newX - r < 0 || newX + r > width) {
+                particle.setVelocity(-particle.getDx(), particle.getDy());
+                newX = Math.max(r, Math.min(width - r, newX));
+            }
+            if (newY - r < 0 || newY + r > height) {
+                particle.setVelocity(particle.getDx(), -particle.getDy());
+                newY = Math.max(r, Math.min(height - r, newY));
+            }
+
+            particle.setPos(newX, newY);
+            grid.updateParticlePosition(particle, oldX, oldY);
         }
     }
 

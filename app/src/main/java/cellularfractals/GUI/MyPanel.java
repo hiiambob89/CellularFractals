@@ -30,11 +30,11 @@ public class MyPanel extends JPanel {
         // Create control panel
         JPanel controlPanel = new JPanel();
         controlPanel.setLayout(new GridLayout(0, 1));
-        
+
         // Add information labels
         JLabel sizeLabel = new JLabel(String.format("Grid Size: %.1f x %.1f", world.getWidth(), world.getHeight()));
         JLabel particleCountLabel = new JLabel("Particles: " + world.getParticleCount());
-        
+
         // Add buttons
         JButton resetButton = new JButton("Reset");
         resetButton.addActionListener(e -> {
@@ -57,8 +57,7 @@ public class MyPanel extends JPanel {
     }
 
     private class CustomCanvas extends JPanel {
-        private static final int PARTICLE_SIZE = 6;
-        
+
         public CustomCanvas() {
             setBackground(Color.BLACK);
         }
@@ -67,9 +66,9 @@ public class MyPanel extends JPanel {
         protected void paintComponent(Graphics g) {
             super.paintComponent(g);
             Graphics2D g2d = (Graphics2D) g;
-            
+
             // Enable antialiasing
-            g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, 
+            g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
                                 RenderingHints.VALUE_ANTIALIAS_ON);
 
             // Draw grid lines
@@ -77,13 +76,13 @@ public class MyPanel extends JPanel {
             double cellSize = 10.0;
             int width = getWidth();
             int height = getHeight();
-            
+
             // Vertical lines
             for (double x = 0; x < world.getWidth(); x += cellSize) {
                 int screenX = (int)(x * width / world.getWidth());
                 g2d.drawLine(screenX, 0, screenX, height);
             }
-            
+
             // Horizontal lines
             for (double y = 0; y < world.getHeight(); y += cellSize) {
                 int screenY = (int)(y * height / world.getHeight());
@@ -95,20 +94,23 @@ public class MyPanel extends JPanel {
                 // Convert world coordinates to screen coordinates
                 int screenX = (int)(particle.getX() * width / world.getWidth());
                 int screenY = (int)(particle.getY() * height / world.getHeight());
-                
+
+                // Calculate screen radius (scale the world radius to screen coordinates)
+                int screenRadius = (int)(particle.getRadius() * width / world.getWidth());
+
                 // Draw different particle types in different colors
                 if (particle instanceof GravityParticle) {
                     g2d.setColor(Color.RED);
                 } else {
                     g2d.setColor(Color.WHITE);
                 }
-                
-                g2d.fillOval(screenX - PARTICLE_SIZE/2, 
-                            screenY - PARTICLE_SIZE/2, 
-                            PARTICLE_SIZE, 
-                            PARTICLE_SIZE);
-                
-                // Draw velocity vector
+
+                g2d.fillOval(screenX - screenRadius,
+                            screenY - screenRadius,
+                            screenRadius * 2,
+                            screenRadius * 2);
+
+                // Draw velocity vector from center of particle
                 g2d.setColor(Color.CYAN);
                 int velX = (int)(particle.getDx() * 20); // Scale velocity for visualization
                 int velY = (int)(particle.getDy() * 20);
