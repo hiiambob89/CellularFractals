@@ -110,9 +110,9 @@ public class MyPanel extends JPanel {
                 
                 // Draw velocity vector
                 g2d.setColor(Color.CYAN);
-                int velX = (int)(particle.getDx() * 20); // Scale velocity for visualization
-                int velY = (int)(particle.getDy() * 20);
-                g2d.drawLine(screenX, screenY, screenX + velX, screenY + velY);
+                // int velX = (int)(particle.getDx() * 20); // Scale velocity for visualization
+                // int velY = (int)(particle.getDy() * 20);
+                // g2d.drawLine(screenX, screenY, screenX + velX, screenY + velY);
             }
         }
     }
