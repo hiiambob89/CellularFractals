@@ -77,4 +77,19 @@ public abstract class Particle {
       effect.apply(this);
     }
   }
+
+  private Set<String> defaultEffectModifiers = new HashSet<String>();
+  private Set<String> effectModifiers = new HashSet<String>(defaultEffectModifiers);
+
+  public void addEffectModifier(String modifier) {
+    effectModifiers.add(modifier);
+  }
+
+  public void removeEffectModifier(String modifier) {
+    effectModifiers.remove(modifier);
+  }
+
+  public boolean hasEffectModifier(String modifier) {
+    return effectModifiers.contains(modifier);
+  }
 }
