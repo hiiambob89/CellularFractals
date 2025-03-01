@@ -1,15 +1,14 @@
 package cellularfractals.engine;
 
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import cellularfractals.particles.Particle;
 
 public class EffectModifierIndex {
     private World world;
-    private Map<String, Set<Particle>> index = new HashMap<>();
+    private ConcurrentHashMap<String, Set<Particle>> index = new ConcurrentHashMap<>();
     EffectModifierIndex(World world) {
         this.world = world;
     }
@@ -27,10 +26,7 @@ public class EffectModifierIndex {
         return index.get(effectModifier);
     }
     public void addParticleEffectModifier(Particle particle, String effectModifier) {
-        if (!index.containsKey(effectModifier)) {
-            index.put(effectModifier, new HashSet<>());
-        }
-        index.get(effectModifier).add(particle);
+        index.computeIfAbsent(effectModifier, k -> ConcurrentHashMap.newKeySet()).add(particle);
     }
     public void removeParticleEffectModifier(Particle particle, String effectModifier) {
         if (index.containsKey(effectModifier)) {
