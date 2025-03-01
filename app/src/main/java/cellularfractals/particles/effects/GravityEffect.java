@@ -7,24 +7,28 @@ import cellularfractals.particles.Effect;
 import cellularfractals.particles.Particle;
 
 public class GravityEffect extends Effect {
-  private Float range = 10.0f;
-  private Float strength = 1.0f;
+  private Float range;
+  private Float strength;
   public void apply(Particle p) {
     List<Particle> particlesInRange = p.getWorld().grid.getParticlesInRange(p.getX(), p.getY(), range);
-    for (Particle particle : particlesInRange) {
-      if (particle == p) {
+    for (Particle target : particlesInRange) {
+      if (target == p) {
         continue;
       }
-      double dx = particle.getX() - p.getX();
-      double dy = particle.getY() - p.getY();
+      double dx = p.getX() - target.getX();
+      double dy = p.getY() - target.getY();
       double distance = Math.sqrt(dx * dx + dy * dy);
       double force = strength / distance;
       double angle = Math.atan2(dy, dx);
 
-      p.addForce(new Force(
+      target.addForce(new Force(
         force * Math.cos(angle),
         force * Math.sin(angle)
       ));
     }
+  }
+  public GravityEffect(Float range, Float strength) {
+    this.range = range;
+    this.strength = strength;
   }
 }

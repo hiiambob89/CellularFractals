@@ -4,14 +4,15 @@
 package cellularfractals;
 
 import cellularfractals.engine.GameLoop;
+import cellularfractals.engine.World;
 
 public class App {
-    public String getGreeting() {
-        return "Hello World!";
-    }
-
     public static void main(String[] args) {
-        GameLoop gameLoop = new GameLoop();
+        // Create single World instance
+        World world = new World(100, 100, 10);
+        
+        // Create game loop with existing world
+        GameLoop gameLoop = new GameLoop(world);
         gameLoop.run();
     }
 }

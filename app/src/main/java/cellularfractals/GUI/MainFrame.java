@@ -1,36 +1,97 @@
 package cellularfractals.GUI;
 
-import javax.swing.JFrame;
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.WindowEvent;
+
+import cellularfractals.engine.World;
 
 public class MainFrame extends JFrame {
-    public MainFrame() {
-        // Set the title of the JFrame
-        setTitle("Particle Interaction Simulator");
+    private MyPanel customPanel;
+    private World world;
+    private volatile boolean running = false;
+    private Thread gameThread;
+    private static final int TARGET_FPS = 60;
+    private static final long OPTIMAL_TIME = 1000000000 / TARGET_FPS;
 
-        // Set the default close operation
+    public MainFrame(World world) {
+        this.world = world;
+        setTitle("Particle Interaction Simulator");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
-        // Create an instance of the custom JPanel
-        MyPanel customPanel = new MyPanel();
-
-        // Add the custom panel to the JFrame
+        customPanel = new MyPanel(world);
         add(customPanel);
 
-        // Set the size of the JFrame
-        setSize(600, 400);
-
-        // Make the JFrame not resizable
-        setResizable(false);
-
-        // Pack the components within the JFrame
-        pack();
-
-        // Set the JFrame to be visible
+        setSize(800, 600);
+        setLocationRelativeTo(null);
+        
+        addWindowListener(new java.awt.event.WindowAdapter() {
+            @Override
+            public void windowClosing(WindowEvent windowEvent) {
+                stopGameLoop();
+            }
+        });
+        
         setVisible(true);
+        startGameLoop();
     }
 
-    public static void main(String[] args) {
-        // Create an instance of the MainFrame class
-        new MainFrame();
+    private void startGameLoop() {
+        if (gameThread != null) return;
+        
+        running = true;
+        gameThread = new Thread(() -> {
+            long lastLoopTime = System.nanoTime();
+            
+            while (running) {
+                long now = System.nanoTime();
+                long updateLength = now - lastLoopTime;
+                lastLoopTime = now;
+                double delta = updateLength / ((double)OPTIMAL_TIME);
+
+                // Update game state
+                world.update(delta);
+                
+                // Render
+                customPanel.repaint();
+
+                // Sleep to maintain frame rate
+                try {
+                    long gameTime = System.nanoTime() - lastLoopTime;
+                    long sleepTime = (OPTIMAL_TIME - gameTime) / 1000000;
+                    
+                    if (sleepTime > 0) {
+                        Thread.sleep(sleepTime);
+                    }
+                } catch (InterruptedException e) {
+                    running = false;
+                    throw new RuntimeException("Game loop interrupted", e);
+                }
+            }
+        });
+        
+        gameThread.start();
+    }
+
+    private void stopGameLoop() {
+        running = false;
+        if (gameThread != null) {
+            gameThread.interrupt();
+            try {
+                gameThread.join();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            gameThread = null;
+        }
+    }
+
+    @Override
+    public void dispose() {
+        stopGameLoop();
+        if (customPanel != null) {
+            customPanel.dispose();
+        }
+        super.dispose();
     }
 }
