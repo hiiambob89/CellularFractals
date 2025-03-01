@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.awt.Color;
 
 import cellularfractals.engine.World;
 import cellularfractals.engine.Force;
@@ -16,6 +17,7 @@ public abstract class Particle {
   private double baseVelocityY;
   private List<Force> forces = new ArrayList<>();
   private double mass = 1.0; // Default mass
+  public CosmeticSettings cosmeticSettings;
 
   public Particle(World world, double x, double y, double dx, double dy) {
     this.x = x;
@@ -23,6 +25,7 @@ public abstract class Particle {
     this.baseVelocityX = dx;
     this.baseVelocityY = dy;
     this.world = world;
+    this.cosmeticSettings = new CosmeticSettings(Color.WHITE); // Initialize with default color
   }
 
   public World getWorld() {
@@ -54,8 +57,6 @@ public abstract class Particle {
     this.x = x;
     this.y = y;
   }
-
-  public CosmeticSettings cosmeticSettings;
 
   private Set<Effect> effects = new HashSet<Effect>();
 
