@@ -1,4 +1,4 @@
-package app.src.main.java.cellularfractals;
+package cellularfractals;
 public abstract class Particle {
 
 
