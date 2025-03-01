@@ -277,22 +277,34 @@ public class World {
     private void updateParticlePosition(Particle particle, double deltaTime) {
         double oldX = particle.getX();
         double oldY = particle.getY();
+
+        // Get current velocity
         double newDx = particle.getDx();
         double newDy = particle.getDy();
+
+        // Update position based on current velocity
         double newX = oldX + newDx * deltaTime;
         double newY = oldY + newDy * deltaTime;
         double r = particle.getRadius();
 
-        // Check wall collisions with boundary restitution
-        if (newX - r < 0 || newX + r > width) {
+        // Handle wall collisions after movement
+        if (newX - r < 0) {
+            newX = r;
             newDx = -newDx * BOUNDARY_RESTITUTION;
-            newX = Math.max(r, Math.min(width - r, newX));
-        }
-        if (newY - r < 0 || newY + r > height) {
-            newDy = -newDy * BOUNDARY_RESTITUTION;
-            newY = Math.max(r, Math.min(height - r, newY));
+        } else if (newX + r > width) {
+            newX = width - r;
+            newDx = -newDx * BOUNDARY_RESTITUTION;
         }
 
+        if (newY - r < 0) {
+            newY = r;
+            newDy = -newDy * BOUNDARY_RESTITUTION;
+        } else if (newY + r > height) {
+            newY = height - r;
+            newDy = -newDy * BOUNDARY_RESTITUTION;
+        }
+
+        // Always update velocity and position
         particle.setVelocity(newDx, newDy);
         particle.setPos(newX, newY);
         grid.updateParticlePosition(particle, oldX, oldY);
